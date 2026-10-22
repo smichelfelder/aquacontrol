@@ -1,0 +1,123 @@
+substitutions:
+  temp_min: "24.0"   # avisa si baja de esto (°C)
+  temp_max: "27.0"   # avisa si sube de esto (°C)
+
+esphome:
+  name: aquacontrol
+  friendly_name: AquaControl
+  build_path: C:/esphome-build/aquacontrol   # compilar fuera de OneDrive: la ruta con coma rompe el enlazado
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "AquaControl-Setup"
+    password: !secret ap_password
+
+captive_portal:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+web_server:
+  port: 80
+  version: 3
+  js_include: aquacontrol_app.js   # la app (pantallas de tablet y móvil); se genera con python app/build_app.py
+  js_url: ""                           # sin la página de ESPHome; sigue en http://aquacontrol.local/?esphome
+
+mqtt:   # la app fuera de casa: la central deja los datos en EMQX Cloud y lee de ahí las órdenes
+  broker: !secret mqtt_broker
+  port: 8883
+  username: !secret mqtt_user_central
+  password: !secret mqtt_password_central
+  discovery: true        # la app lee estos mensajes para saber qué sondas y botones hay
+  reboot_timeout: 0s     # si se cae internet no se reinicia: sigue midiendo y avisando en casa
+  certificate_authority: |   # DigiCert Global Root G2, el que publica EMQX Cloud (assets.emqx.com/data/emqxsl-ca.crt)
+    -----BEGIN CERTIFICATE-----
+    MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
+    MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+    d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+    MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+    MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+    b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+    9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
+    2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
+    1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
+    q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
+    tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ
+    vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
+    BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
+    5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
+    1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
+    NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
+    Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
+    8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
+    pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
+    MrY=
+    -----END CERTIFICATE-----
+
+http_request:
+  verify_ssl: true
+
+time:
+  - platform: sntp
+    id: hora
+    timezone: Europe/Madrid
+
+script:
+  - id: aviso
+    mode: queued
+    parameters:
+      texto: string
+    then:
+      - http_request.post:
+          url: !secret telegram_url
+          request_headers:
+            Content-Type: application/json
+          json:
+            chat_id: !secret telegram_chat
+            text: !lambda 'return texto;'
+
+button:
+  - platform: template
+    name: "Probar aviso de Telegram"
+    on_press:
+      - script.execute:
+          id: aviso
+          texto: "AquaControl: los avisos funcionan"
+
+one_wire:
+  - platform: gpio
+    pin: GPIO4
+
+sensor:
+  - platform: dallas_temp
+    id: temp_agua
+    name: "Temperatura"
+    update_interval: 60s
+    filters:
+      - offset: 0.0   # ajuste fino, ver «Pruebas»
+    on_value_range:
+      - below: ${temp_min}
+        then:
+          - script.execute:
+              id: aviso
+              texto: "Temperatura baja: revisá el calentador"
+      - above: ${temp_max}
+        then:
+          - script.execute:
+              id: aviso
+              texto: "Temperatura alta: revisá el calentador y la luz"

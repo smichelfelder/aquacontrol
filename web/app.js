@@ -4,7 +4,7 @@ window.AQ_DATOS = {"layouts": {"tablet": "<!DOCTYPE html>\n<html lang=\"es\"><he
 //
 // Dos formas de conectarse:
 //  - En casa (la página la sirve la central): lee /events de la central.
-//  - En la nube (página https): se conecta a HiveMQ Cloud por MQTT; la central publica ahí.
+//  - En la nube (página https): se conecta a EMQX Cloud por MQTT; la central publica ahí.
 (() => {
   const D = window.AQ_DATOS;
 
