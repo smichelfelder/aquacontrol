@@ -1,6 +1,7 @@
 // La cuenta de AquaControl en Supabase: un único usuario con contraseña (sin registro abierto).
-// Guarda los datos de EMQX y lo que se carga en la app, así cada dispositivo nuevo solo
-// tiene que entrar con ese usuario. La tabla y sus permisos están en supabase/esquema.sql.
+// Guarda los datos de EMQX (se cargan una vez desde Supabase: supabase/cargar-emqx.sql) y lo que
+// se carga en la app, así cada dispositivo solo tiene que entrar con ese usuario.
+// La tabla y sus permisos están en supabase/esquema.sql.
 import { createClient } from '@supabase/supabase-js'
 import { alCambiarGuardado, guardadoActual, reemplazarGuardado, type Guardado } from './guardado'
 
@@ -37,14 +38,12 @@ async function leerFila() {
   return data as { mqtt: Credenciales | null; datos: Partial<Guardado> | null } | null
 }
 
-async function escribirFila(cambios: { mqtt?: Credenciales; datos?: Guardado }) {
+async function escribirFila(cambios: { datos: Guardado }) {
   const usuario = await usuarioId()
   if (!usuario) return false
   const { error } = await sb!.from('cuenta').upsert({ usuario, ...cambios, actualizado: new Date().toISOString() })
   return !error
 }
-
-export const guardarMqtt = (mqtt: Credenciales) => escribirFila({ mqtt })
 
 /* ---------- Peces, plantas y abonos: iguales en todos los dispositivos ---------- */
 let pendiente = false  // hay cambios de este dispositivo que todavía no se subieron
