@@ -1,0 +1,32 @@
+{
+  "name": "AquaControl",
+  "short_name": "AquaControl",
+  "description": "El acuario de casa: sondas, peces, plantas y abonos.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0b1d20",
+  "theme_color": "#0b1d20",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
