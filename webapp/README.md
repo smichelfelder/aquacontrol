@@ -25,6 +25,33 @@ En `npm run dev` la app arranca en modo **demo**, con valores de ejemplo, porque
 
 El service worker solo funciona en `https` o en `localhost`. Por eso no corre en la versión que sirve la central (`http://aquacontrol.local`).
 
+## Cuenta (Supabase)
+
+Fuera de casa, la app se usa con **un único usuario con contraseña**. Los dispositivos nuevos no se pueden registrar solos: solo entra ese usuario. En la cuenta quedan guardados:
+
+- **Los datos de EMQX:** se cargan una vez y ningún otro dispositivo los vuelve a pedir.
+- **Peces, plantas, plan de abonos y medidas del acuario:** se ven iguales en todos los dispositivos. Cada cambio se sube enseguida, y al volver a la app se trae lo que se haya cambiado desde otro lado.
+
+Cada dispositivo pide el usuario y la contraseña **una sola vez**, porque la sesión queda abierta. La primera vez que se entra, la cuenta se queda con los peces y plantas que ya había en ese dispositivo.
+
+Las reglas de la tabla hacen que solo ese usuario pueda leer su fila. Si Supabase no responde, la app usa los últimos datos de EMQX que guardó en el dispositivo.
+
+Sin las variables `VITE_SUPABASE_*`, la app funciona como antes: pide los datos de EMQX en cada dispositivo. La versión que sirve la central en casa no usa la cuenta.
+
+### Puesta en marcha (una sola vez)
+
+1. En [supabase.com](https://supabase.com), creá un proyecto gratuito (región *Central EU (Frankfurt)*, cerca de EMQX).
+2. En **SQL Editor**, pegá [supabase/esquema.sql](supabase/esquema.sql) y apretá **Run**.
+3. En **Authentication → Sign In / Providers**, desactivá *Allow new users to sign up*.
+4. En **Authentication → Users → Add user → Create new user**, poné tu email y una contraseña larga que no uses en otro lado, y marcá *Auto Confirm User*.
+5. En **Project Settings → API Keys**, copiá la *Project URL* y la *publishable key*:
+   - Para desarrollar: copiá `.env.example` como `.env.local` y completalo. `.env.local` no se sube a GitHub.
+   - En Vercel: en el proyecto, **Settings → Environment Variables**, cargá `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` y volvé a publicar.
+
+La *publishable key* puede estar en la app: sola no da acceso a nada, porque las reglas de la tabla piden haber entrado con el usuario.
+
+Ojo: Supabase pausa los proyectos gratuitos que pasan una semana sin uso. Si pasa, se reactiva con un clic desde el panel de Supabase; mientras tanto la app sigue conectándose con los datos de EMQX guardados en cada dispositivo.
+
 ## Publicación en Vercel
 
 `vercel.json` (en esta carpeta) ya está listo: build de Vite, `dist/` como salida, sin caché para `sw.js` y el manifest, y caché larga para `assets/`. Además, Vercel no vuelve a compilar si un `git push` no cambia nada de `webapp/`.
@@ -39,9 +66,11 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | Archivo | Qué hay |
 |---|---|
 | `src/App.tsx` | Marco de la app: secciones (abajo en el móvil, a la izquierda en la tablet) y encabezado. |
-| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio` e `Ingreso` (los datos de EMQX). |
+| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio` e `Ingreso` (la cuenta y los datos de EMQX). |
 | `src/lib/central.ts` | Conexión con la central: SSE en casa, MQTT en la nube y demo. Reemplaza a `app/puente.js`. |
-| `src/lib/guardado.ts` | Lo que se carga en la app (peces, plantas, plan de abonos, medidas). Queda en cada dispositivo, con la misma clave que la app anterior. |
+| `src/lib/cuenta.ts` | La cuenta en Supabase: entrar, datos de EMQX y sincronización de lo cargado en la app. |
+| `src/lib/guardado.ts` | Lo que se carga en la app (peces, plantas, plan de abonos, medidas). Queda en el dispositivo, con la misma clave que la app anterior, y se sincroniza con la cuenta. |
+| `supabase/esquema.sql` | La tabla de la cuenta y sus permisos. |
 | `src/lib/acuario.ts` | Cálculos: litros netos, dosis, objetivos según los peces y estado de cada especie. |
 | `src/data/` | Biblioteca de peces y plantas, sacada del diseño. |
 | `src/components/ui/` | Componentes de shadcn (`npx shadcn@latest add <componente>`). |
@@ -51,4 +80,6 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 
 - Pantallas: Mis peces, Mis plantas, Abonos y Mi acuario, con las fotos de los peces.
 - Crear el proyecto de prueba en Vercel y, al terminar, hacer el cambio (ver «Publicación en Vercel»).
+- Crear el proyecto de Supabase y el usuario (ver «Cuenta»).
+- Un botón para cerrar la sesión (por ejemplo, en «Mi acuario»).
 - Decidir qué versión sirve la central en `http://aquacontrol.local`.
