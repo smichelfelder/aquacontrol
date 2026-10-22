@@ -2,6 +2,8 @@
 
 Control del acuario de casa: una central ESP32-S3 con ESPHome mide la temperatura (y, según la etapa, nivel de agua, TDS, pH y batería), avisa por Telegram y maneja el filtro y el comedero. La app para tablet y móvil muestra todo en vivo, en casa y fuera de casa.
 
+**App:** https://aquacontrol-ten.vercel.app (se publica sola en Vercel con cada `git push`).
+
 El armado completo, etapa por etapa, está en [docs/AquaControl_Manual_de_armado_por_etapas.pdf](docs/AquaControl_Manual_de_armado_por_etapas.pdf).
 
 ## Cómo funciona
@@ -55,7 +57,7 @@ La primera vez elegí el puerto **COM** (por cable). Las siguientes, **Over The 
 
 ### 4. Instalar la app
 
-Abrí la dirección de Vercel en Chrome del móvil o la tablet → menú ⋮ → **Instalar app**. La primera vez pide el servidor de EMQX, el usuario `app` y su contraseña.
+Abrí https://aquacontrol-ten.vercel.app en Chrome del móvil o la tablet → menú ⋮ → **Instalar app**. La primera vez pide el servidor de EMQX, el usuario `app` y su contraseña.
 
 ## Cómo se actualiza
 
