@@ -21,7 +21,7 @@ En `npm run dev` la app arranca en modo **demo**, con valores de ejemplo, porque
 
 ## App instalable (PWA)
 
-`vite-plugin-pwa` arma el manifest y el service worker (configurados en `vite.config.ts`). El service worker guarda la app en el dispositivo para que abra sin internet y se actualiza solo: la versión nueva entra la próxima vez que se abre la app. Nunca guarda los datos de la central (`/events` y los botones). Los íconos están en `public/` y son los mismos de `app/icons/`.
+`vite-plugin-pwa` arma el manifest y el service worker (configurados en `vite.config.ts`). El service worker guarda la app en el dispositivo para que abra sin internet y se actualiza solo: cuando hay una versión nueva publicada (se busca cada vez que se vuelve a la app), la baja y recarga la página con ella. Nunca guarda los datos de la central (`/events` y los botones). Los íconos están en `public/` y son los mismos de `app/icons/`.
 
 El service worker solo funciona en `https` o en `localhost`. Por eso no corre en la versión que sirve la central (`http://aquacontrol.local`).
 
