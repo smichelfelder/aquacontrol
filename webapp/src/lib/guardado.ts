@@ -44,6 +44,7 @@ function leer(): Guardado {
 
 let actual = leer()
 const subs = new Set<() => void>()
+const cambiosDelUsuario = new Set<(g: Guardado) => void>()
 
 function escribir(g: Guardado) {
   actual = g
@@ -53,8 +54,24 @@ function escribir(g: Guardado) {
 
 const suscribir = (f: () => void) => { subs.add(f); return () => subs.delete(f) }
 
+export const guardadoActual = () => actual
+
+/** Lo que llega de la cuenta: reemplaza lo de este dispositivo sin volver a subirlo. */
+export function reemplazarGuardado(g: Partial<Guardado>) {
+  escribir({ ...INICIAL, ...g })
+}
+
+/** Avisa cada cambio hecho en la app (para subirlo a la cuenta). */
+export function alCambiarGuardado(f: (g: Guardado) => void) {
+  cambiosDelUsuario.add(f)
+  return () => { cambiosDelUsuario.delete(f) }
+}
+
 export function useGuardado() {
   const g = useSyncExternalStore(suscribir, () => actual)
-  const cambiar = useCallback((parcial: Partial<Guardado>) => escribir({ ...actual, ...parcial }), [])
+  const cambiar = useCallback((parcial: Partial<Guardado>) => {
+    escribir({ ...actual, ...parcial })
+    cambiosDelUsuario.forEach((f) => f(actual))
+  }, [])
   return [g, cambiar] as const
 }

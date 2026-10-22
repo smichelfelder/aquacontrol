@@ -2,10 +2,12 @@
 //
 // Tres formas de conectarse:
 //  - local: la página la sirve la central (http://aquacontrol.local); lee /events.
-//  - nube: página https (Vercel); MQTT contra EMQX Cloud, donde publica la central.
+//  - nube: página https (Vercel); MQTT contra EMQX Cloud, donde publica la central. Los datos
+//    de EMQX salen de la cuenta de AquaControl (lib/cuenta.ts) o, sin cuenta, del dispositivo.
 //  - demo: valores de ejemplo, para desarrollar sin la central (?demo, y por defecto en `npm run dev`).
 import { useSyncExternalStore } from 'react'
 import type { MqttClient } from 'mqtt'
+import { abrirCuenta, entrar, guardarMqtt, hayCuenta, haySesion, type Credenciales } from './cuenta'
 
 export interface Sondas {
   temp: number | null
@@ -17,14 +19,18 @@ export interface Sondas {
   corriente: boolean | null
 }
 
-export interface Credenciales { servidor: string; usuario: string; clave: string }
+export type { Credenciales }
+
+/** Qué pantalla de ingreso mostrar: la cuenta de AquaControl o los datos de EMQX. */
+export type Pide = { que: 'cuenta' | 'mqtt'; error: string } | null
 
 export interface EstadoCentral {
   modo: 'local' | 'nube' | 'demo'
   sondas: Sondas
   conectado: boolean
   vistos: ReadonlySet<string>    // sondas y botones que anunció la central ('button/Alimentar')
-  pideClave: string | null       // null: no hace falta; '' o un mensaje: mostrar la pantalla de ingreso
+  pide: Pide                     // null: no hace falta ingresar nada
+  cargando: boolean              // esperando la cuenta (sesión o datos)
 }
 
 // Nombre de cada entidad en aquacontrol.yaml → clave de Sondas
@@ -49,7 +55,7 @@ function elegirModo(): EstadoCentral['modo'] {
   return import.meta.env.DEV ? 'demo' : 'local'
 }
 
-let estado: EstadoCentral = { modo: elegirModo(), sondas: SIN_DATOS, conectado: false, vistos: new Set(), pideClave: null }
+let estado: EstadoCentral = { modo: elegirModo(), sondas: SIN_DATOS, conectado: false, vistos: new Set(), pide: null, cargando: false }
 const subs = new Set<() => void>()
 const avisar = (cambio: Partial<EstadoCentral>) => {
   estado = { ...estado, ...cambio }
@@ -121,7 +127,7 @@ async function conectarNube(cfg: Credenciales) {
     if (code != null && [4, 5, 134, 135].includes(code)) {
       cli.end(true)
       olvidarClave()
-      avisar({ pideClave: 'Usuario o contraseña incorrectos.' })
+      avisar({ pide: { que: 'mqtt', error: 'EMQX rechazó el usuario o la contraseña.' } })
     }
   })
   cli.on('message', (tema, buf) => {
@@ -171,23 +177,59 @@ function olvidarClave() {
   try { localStorage.setItem(CLAVE_MQTT, JSON.stringify(resto)) } catch { /* sin almacenamiento */ }
 }
 export const credencialesGuardadas = leerClave
+const completas = (c: Partial<Credenciales> | null): c is Credenciales => !!(c?.servidor && c.usuario && c.clave)
 
-export function ingresar(c: Credenciales) {
+function usarMqtt(cfg: Credenciales) {
+  // Copia en el dispositivo: si la cuenta no responde, igual se conecta
+  try { localStorage.setItem(CLAVE_MQTT, JSON.stringify(cfg)) } catch { /* sin almacenamiento */ }
+  avisar({ pide: null, cargando: false })
+  conectarNube(cfg)
+}
+
+/** Pantalla de EMQX: con cuenta, los datos quedan guardados para todos los dispositivos. */
+export async function ingresarMqtt(c: Credenciales) {
   // Acepta lo que se pegue de la consola de EMQX: sin protocolo ni puerto
   const servidor = c.servidor.trim().replace(/^[a-z]+:\/\//i, '').replace(/[:/].*$/, '')
   const cfg = { servidor, usuario: c.usuario.trim(), clave: c.clave }
-  try { localStorage.setItem(CLAVE_MQTT, JSON.stringify(cfg)) } catch { /* sin almacenamiento */ }
-  avisar({ pideClave: null })
-  conectarNube(cfg)
+  if (hayCuenta && !(await guardarMqtt(cfg))) {
+    avisar({ pide: { que: 'mqtt', error: 'No se pudieron guardar los datos en la cuenta. Probá de nuevo.' } })
+    return
+  }
+  usarMqtt(cfg)
+}
+
+/** Pantalla de la cuenta de AquaControl. */
+export async function ingresarCuenta(email: string, clave: string) {
+  const error = await entrar(email, clave)
+  if (error) { avisar({ pide: { que: 'cuenta', error } }); return }
+  await seguirConCuenta()
+}
+
+async function seguirConCuenta() {
+  avisar({ cargando: true })
+  try {
+    const mqtt = await abrirCuenta()
+    if (completas(mqtt)) usarMqtt(mqtt)
+    else avisar({ pide: { que: 'mqtt', error: '' }, cargando: false })
+  } catch {
+    // Sin respuesta de la cuenta: lo último que se usó en este dispositivo
+    const local = leerClave()
+    if (completas(local)) usarMqtt(local)
+    else avisar({ pide: { que: 'cuenta', error: 'No se pudo leer la cuenta. Revisá la conexión.' }, cargando: false })
+  }
 }
 
 /* ---------- Arranque ---------- */
 if (estado.modo === 'demo') conectarDemo()
 else if (estado.modo === 'local') conectarLocal()
-else {
+else if (hayCuenta) {
+  avisar({ cargando: true })
+  haySesion().then((si) => (si ? seguirConCuenta() : avisar({ pide: { que: 'cuenta', error: '' }, cargando: false })))
+} else {
+  // Sin cuenta configurada: los datos de EMQX se piden en cada dispositivo
   const cfg = leerClave()
-  if (cfg.servidor && cfg.usuario && cfg.clave) conectarNube(cfg as Credenciales)
-  else avisar({ pideClave: '' })
+  if (completas(cfg)) usarMqtt(cfg)
+  else avisar({ pide: { que: 'mqtt', error: '' } })
 }
 
 export const tiene = (id: string) => estado.vistos.has(id)

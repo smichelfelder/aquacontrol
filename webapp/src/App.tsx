@@ -19,7 +19,14 @@ const SECCIONES: { id: Seccion; corto: string; titulo: string; Icono: ComponentT
 export default function App() {
   const central = useCentral()
   const [seccion, setSeccion] = useState<Seccion>('inicio')
-  if (central.pideClave !== null) return <Ingreso error={central.pideClave} />
+  if (central.pide) return <Ingreso pide={central.pide} />
+  if (central.cargando) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Cargando la cuenta">
+        <span className="animate-pulse"><Logo size={56} /></span>
+      </div>
+    )
+  }
 
   const actual = SECCIONES.find((s) => s.id === seccion)!
   return (
