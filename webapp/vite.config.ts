@@ -8,11 +8,11 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // App instalable: manifest y service worker. Se actualiza sola: la versión nueva
-    // entra la próxima vez que se abre la app.
+    // App instalable: manifest y service worker. Se actualiza sola: cuando hay una versión
+    // nueva, la página se recarga con ella apenas termina de bajarla.
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'script-defer',
+      injectRegister: false,  // se registra en main.tsx, que recarga la página con la versión nueva
       includeAssets: ['icon.svg'],
       manifest: {
         id: '/',
@@ -38,6 +38,10 @@ export default defineConfig({
         // /events y los botones son de la central: nunca desde la caché
         navigateFallbackDenylist: [/^\/events/, /\/press$/],
         cleanupOutdatedCaches: true,
+        // La versión nueva toma el control enseguida, sin esperar a que se cierren todas las
+        // ventanas de la app (si no, una app instalada podía quedarse días con la vieja)
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
