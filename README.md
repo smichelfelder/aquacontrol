@@ -30,6 +30,7 @@ El armado completo, etapa por etapa, está en [docs/AquaControl_Manual_de_armado
 | `app/` | Lo que arma la app: `build_app.py`, `puente.js` (la conexión con la central), `mqtt.min.js` y los íconos. |
 | `diseno/` | El diseño de las pantallas (`Pantallas AquaControl.html`) y las fotos de los peces. |
 | `web/` | La app ya armada. **No se edita a mano:** la genera `build_app.py`. Es lo que publica Vercel. |
+| `webapp/` | La app nueva en React + TypeScript + Tailwind + shadcn, en migración (ver [webapp/README.md](webapp/README.md)). Todavía no se publica. |
 | `docs/` | El manual de armado por etapas. |
 
 ## Puesta en marcha

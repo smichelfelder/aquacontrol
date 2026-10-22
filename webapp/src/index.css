@@ -1,0 +1,87 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/sora";
+
+/* La app es siempre oscura: los colores salen del diseño (diseno/Pantallas AquaControl.html). */
+
+@theme inline {
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-heading: "Sora Variable", sans-serif;
+
+  /* Estados de las sondas y fichas */
+  --color-aviso: #f0b47f;      /* revisar (ámbar) */
+  --color-alerta: #f29a9a;     /* problema serio (rojo) */
+  --color-bien: #b9dc8c;       /* resumen en orden */
+  --color-planta: #97c459;
+  --color-tenue: #93aea8;      /* textos secundarios más apagados */
+  --color-panel: rgb(9 24 26 / 0.7);
+  --color-barra: #0f2427;
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: dark;
+  --background: #0b1d20;
+  --foreground: #e8f1ef;
+  --card: rgb(9 24 26 / 0.7);
+  --card-foreground: #e8f1ef;
+  --popover: #0f2427;
+  --popover-foreground: #e8f1ef;
+  --primary: #7fd6b4;               /* el «accent» del diseño */
+  --primary-foreground: #062018;
+  --secondary: rgb(127 214 180 / 0.12);
+  --secondary-foreground: #d6f3e6;
+  --muted: rgb(170 225 212 / 0.08);
+  --muted-foreground: #a7c0bb;
+  --accent: rgb(170 225 212 / 0.1);
+  --accent-foreground: #e8f7f0;
+  --destructive: #f29a9a;
+  --border: rgb(170 225 212 / 0.16);
+  --input: rgb(170 225 212 / 0.25);
+  --ring: #7fd6b4;
+  --radius: 0.875rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply min-h-dvh text-foreground;
+    margin: 0;
+    background: linear-gradient(180deg, #0d2427 0%, #0b1d20 45%, #0a191b 100%) fixed, #0b1d20;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
