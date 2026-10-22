@@ -3,14 +3,39 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Logo } from '@/components/iconos'
-import { credencialesGuardadas, ingresarCuenta, ingresarMqtt, type Pide } from '@/lib/central'
-import { hayCuenta } from '@/lib/cuenta'
+import { cerrarSesion, credencialesGuardadas, ingresarCuenta, ingresarMqtt, type Pide } from '@/lib/central'
 
 const CAMPO = 'h-[50px] rounded-[14px] bg-panel px-3.5 text-base md:text-base'
 
 /** Lo que hay que ingresar para usar la app fuera de casa. */
 export function Ingreso({ pide }: { pide: NonNullable<Pide> }) {
-  return pide.que === 'cuenta' ? <Cuenta error={pide.error} /> : <Emqx error={pide.error} />
+  if (pide.que === 'cuenta') return <Cuenta error={pide.error} />
+  if (pide.que === 'aviso') return <Aviso texto={pide.error} />
+  return <Emqx error={pide.error} />
+}
+
+/** Con cuenta, los datos de EMQX no se cargan en la app: si faltan o fallan, se avisa. */
+function Aviso({ texto }: { texto: string }) {
+  return (
+    <div className="mx-auto flex max-w-[360px] flex-col gap-3.5 px-6 pt-[12vh] pb-6">
+      <Marca />
+      <p role="alert" className="text-base text-aviso">{texto}</p>
+      <p className="text-sm text-muted-foreground">
+        En Supabase → SQL Editor, ejecutá <code className="text-foreground">supabase/cargar-emqx.sql</code> con los datos de EMQX (ver README, «Cuenta»).
+      </p>
+      <Button onClick={() => location.reload()} className="mt-1.5 h-[52px] rounded-full text-base font-semibold">Reintentar</Button>
+      <Button variant="ghost" onClick={cerrarSesion} className="h-11 rounded-full text-muted-foreground">Cerrar sesión</Button>
+    </div>
+  )
+}
+
+function Marca() {
+  return (
+    <h1 className="mb-1 flex items-center gap-2.5 text-[28px] font-medium">
+      <Logo size={34} />
+      <span>Aqua<b className="font-semibold text-primary">Control</b></span>
+    </h1>
+  )
 }
 
 /** La cuenta de AquaControl: un único usuario, una vez por dispositivo. */
@@ -33,7 +58,7 @@ function Cuenta({ error }: { error: string }) {
   )
 }
 
-/** Datos de EMQX Cloud. Con cuenta se cargan una sola vez para todos los dispositivos. */
+/** Datos de EMQX Cloud, solo cuando la app no tiene cuenta: quedan en este dispositivo. */
 function Emqx({ error }: { error: string }) {
   const previas = credencialesGuardadas()
   const [servidor, setServidor] = useState(previas.servidor ?? '')
@@ -41,9 +66,7 @@ function Emqx({ error }: { error: string }) {
   const [clave, setClave] = useState('')
   return (
     <Formulario error={error} boton="Guardar y conectar"
-      texto={hayCuenta
-        ? 'Datos de tu servidor MQTT (EMQX Cloud). Quedan guardados en la cuenta: los otros dispositivos ya no los van a pedir.'
-        : 'Datos de tu servidor MQTT (EMQX Cloud). Se piden una sola vez en este dispositivo.'}
+      texto="Datos de tu servidor MQTT (EMQX Cloud). Se piden una sola vez en este dispositivo."
       enviar={() => ingresarMqtt({ servidor, usuario, clave })}>
       <Campo id="servidor" label="Servidor">
         <Input id="servidor" required autoComplete="off" placeholder="xxxx.ala.eu-central-1.emqxsl.com"
@@ -72,10 +95,7 @@ function Formulario({ texto, error, boton, enviar, children }: {
   }
   return (
     <form onSubmit={alEnviar} className="mx-auto flex max-w-[360px] flex-col gap-3.5 px-6 pt-[12vh] pb-6">
-      <h1 className="mb-1 flex items-center gap-2.5 text-[28px] font-medium">
-        <Logo size={34} />
-        <span>Aqua<b className="font-semibold text-primary">Control</b></span>
-      </h1>
+      <Marca />
       <p className="text-sm text-muted-foreground">{texto}</p>
       {error && <p role="alert" className="text-sm text-alerta">{error}</p>}
       {children}

@@ -7,7 +7,7 @@
 //  - demo: valores de ejemplo, para desarrollar sin la central (?demo, y por defecto en `npm run dev`).
 import { useSyncExternalStore } from 'react'
 import type { MqttClient } from 'mqtt'
-import { abrirCuenta, entrar, guardarMqtt, hayCuenta, haySesion, type Credenciales } from './cuenta'
+import { abrirCuenta, entrar, hayCuenta, haySesion, salir, type Credenciales } from './cuenta'
 
 export interface Sondas {
   temp: number | null
@@ -21,8 +21,11 @@ export interface Sondas {
 
 export type { Credenciales }
 
-/** Qué pantalla de ingreso mostrar: la cuenta de AquaControl o los datos de EMQX. */
-export type Pide = { que: 'cuenta' | 'mqtt'; error: string } | null
+/**
+ * Qué pantalla mostrar antes de la app: la cuenta de AquaControl, los datos de EMQX (solo sin
+ * cuenta) o un aviso (con cuenta, los datos de EMQX se cargan en Supabase y no en la app).
+ */
+export type Pide = { que: 'cuenta' | 'mqtt' | 'aviso'; error: string } | null
 
 export interface EstadoCentral {
   modo: 'local' | 'nube' | 'demo'
@@ -127,7 +130,9 @@ async function conectarNube(cfg: Credenciales) {
     if (code != null && [4, 5, 134, 135].includes(code)) {
       cli.end(true)
       olvidarClave()
-      avisar({ pide: { que: 'mqtt', error: 'EMQX rechazó el usuario o la contraseña.' } })
+      avisar({ pide: hayCuenta
+        ? { que: 'aviso', error: 'EMQX rechazó el usuario o la contraseña guardados en la cuenta. Corregilos en Supabase.' }
+        : { que: 'mqtt', error: 'EMQX rechazó el usuario o la contraseña.' } })
     }
   })
   cli.on('message', (tema, buf) => {
@@ -186,16 +191,18 @@ function usarMqtt(cfg: Credenciales) {
   conectarNube(cfg)
 }
 
-/** Pantalla de EMQX: con cuenta, los datos quedan guardados para todos los dispositivos. */
+/** Pantalla de EMQX (solo sin cuenta): los datos quedan en este dispositivo. */
 export async function ingresarMqtt(c: Credenciales) {
   // Acepta lo que se pegue de la consola de EMQX: sin protocolo ni puerto
   const servidor = c.servidor.trim().replace(/^[a-z]+:\/\//i, '').replace(/[:/].*$/, '')
-  const cfg = { servidor, usuario: c.usuario.trim(), clave: c.clave }
-  if (hayCuenta && !(await guardarMqtt(cfg))) {
-    avisar({ pide: { que: 'mqtt', error: 'No se pudieron guardar los datos en la cuenta. Probá de nuevo.' } })
-    return
-  }
-  usarMqtt(cfg)
+  usarMqtt({ servidor, usuario: c.usuario.trim(), clave: c.clave })
+}
+
+/** Con cuenta: cerrar la sesión y volver a la pantalla de ingreso. */
+export async function cerrarSesion() {
+  await salir()
+  olvidarClave()
+  location.reload()
 }
 
 /** Pantalla de la cuenta de AquaControl. */
@@ -210,7 +217,7 @@ async function seguirConCuenta() {
   try {
     const mqtt = await abrirCuenta()
     if (completas(mqtt)) usarMqtt(mqtt)
-    else avisar({ pide: { que: 'mqtt', error: '' }, cargando: false })
+    else avisar({ pide: { que: 'aviso', error: 'La cuenta todavía no tiene los datos de EMQX. Se cargan una sola vez en Supabase.' }, cargando: false })
   } catch {
     // Sin respuesta de la cuenta: lo último que se usó en este dispositivo
     const local = leerClave()
