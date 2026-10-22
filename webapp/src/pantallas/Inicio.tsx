@@ -1,4 +1,5 @@
-import type { ComponentProps, ReactNode } from 'react'
+import { useState, type ComponentProps, type ReactNode } from 'react'
+import { HistorialTemperatura } from '@/components/HistorialTemperatura'
 import { Button } from '@/components/ui/button'
 import { IconoAcuario, IconoComida, IconoFlecha, IconoOlas, IconoPez, IconoPlanta } from '@/components/iconos'
 import { HORAS_COMIDA } from '@/data'
@@ -18,6 +19,7 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
   const [g, cambiar] = useGuardado()
   const ahora = useAhora()
   const s = central.sondas
+  const [historial, setHistorial] = useState(false)
 
   // Sondas y su objetivo según los peces que tengo
   const rT = objetivo(g, 't', s.temp)
@@ -64,12 +66,14 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
-        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && !rT.ok} pie={objTxt(rT, 0, ' °C')} />
+        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && !rT.ok} pie={objTxt(rT, 0, ' °C')}
+          onClick={() => setHistorial(true)} />
         <Sonda titulo="pH" valor={fmt(s.ph, 1)} alerta={s.ph != null && !rP.ok} pie={objTxt(rP, 1, '')} />
         <Sonda titulo="TDS" valor={s.tds == null ? '—' : String(Math.round(s.tds))} unidad="ppm" alerta={s.tds != null && !rD.ok} pie={objTxt(rD, 0, ' ppm')} />
         <Sonda titulo="Nivel de agua" valor={nivel.txt} pie={nivel.sub}
           tono={{ bien: 'text-primary', aviso: 'text-aviso', alerta: 'text-alerta', 'sin-dato': 'text-tenue' }[nivel.tono]} />
       </div>
+      <HistorialTemperatura abierto={historial} cambiar={setHistorial} actual={s.temp} rango={rT.rango} modo={central.modo} />
 
       <div className="flex flex-col gap-3.5 md:grid md:flex-1 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:grid-rows-[1fr_auto] md:gap-4">
         {/* Abono de hoy */}
@@ -134,12 +138,19 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
   )
 }
 
-function Sonda({ titulo, valor, unidad, pie, alerta, tono }: {
-  titulo: string; valor: string; unidad?: string; pie: string; alerta?: boolean; tono?: string
+/** Con onClick se puede tocar (abre el historial) y muestra una flecha. */
+function Sonda({ titulo, valor, unidad, pie, alerta, tono, onClick }: {
+  titulo: string; valor: string; unidad?: string; pie: string; alerta?: boolean; tono?: string; onClick?: () => void
 }) {
+  const Caja = onClick ? 'button' : 'div'
   return (
-    <div className="flex flex-col gap-1 rounded-[18px] border border-border bg-panel px-4 py-3.5 md:gap-1.5 md:rounded-[20px] md:px-[22px] md:py-[18px]">
-      <div className="text-sm text-muted-foreground md:text-base">{titulo}</div>
+    <Caja {...(onClick && { type: 'button' as const, onClick, 'aria-label': `${titulo}: ${valor} ${unidad ?? ''}. Ver historial` })}
+      className={cn('flex flex-col gap-1 rounded-[18px] border border-border bg-panel px-4 py-3.5 text-left md:gap-1.5 md:rounded-[20px] md:px-[22px] md:py-[18px]',
+        onClick && 'cursor-pointer transition-colors hover:bg-[rgb(14_34_36/0.8)] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none')}>
+      <div className="flex items-center justify-between text-sm text-muted-foreground md:text-base">
+        {titulo}
+        {onClick && <IconoFlecha size={18} className="shrink-0 text-tenue" />}
+      </div>
       <div className="flex items-baseline gap-1 md:gap-1.5">
         <span className={cn('font-heading text-[34px] leading-[1.15] font-medium md:text-[50px] md:leading-[1.1]', tono ?? (alerta ? 'text-aviso' : 'text-foreground'))}>
           {valor}
@@ -147,7 +158,7 @@ function Sonda({ titulo, valor, unidad, pie, alerta, tono }: {
         {unidad && <span className="text-base text-muted-foreground md:text-[22px]">{unidad}</span>}
       </div>
       <div className="text-xs text-tenue md:text-sm">{pie}</div>
-    </div>
+    </Caja>
   )
 }
 
