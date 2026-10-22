@@ -141,20 +141,23 @@ window.AQ_DATOS = {"layouts": {"tablet": "<!DOCTYPE html>\n<html lang=\"es\"><he
   // Pantalla de ingreso (solo en la nube, la primera vez o si la clave falla)
   const pedirClave = (msg) => {
     const prev = leer(CLAVE_MQTT) || {};
-    document.documentElement.innerHTML = '<head><meta name="viewport" content="width=device-width, initial-scale=1"><title>AquaControl</title><style>'
-      + 'html,body{margin:0;min-height:100%;background:#0b1d20;color:#e8f1ef;font:16px/1.4 system-ui,sans-serif}'
+    // Solo se cambia el body: el head conserva el manifest y los íconos para poder instalar la app
+    const estilo = document.createElement('style');
+    estilo.textContent = 'html,body{margin:0;min-height:100%;background:#0b1d20;color:#e8f1ef;font:16px/1.4 system-ui,sans-serif}'
       + 'form{max-width:360px;margin:0 auto;padding:12vh 24px 24px;display:flex;flex-direction:column;gap:14px}'
       + 'h1{font-weight:500;font-size:28px;margin:0 0 4px}h1 b{color:#7fd6b4;font-weight:600}p{margin:0;color:#a7c0bb;font-size:14px}'
       + 'label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:#a7c0bb}'
       + 'input{font:inherit;color:#e8f1ef;background:rgba(9,24,26,.7);border:1px solid rgba(170,225,212,.25);border-radius:14px;padding:14px}'
       + 'button{font:inherit;font-weight:600;border:0;border-radius:26px;padding:14px;background:#7fd6b4;color:#062018;margin-top:6px}'
-      + '.err{color:#f29a9a}</style></head><body><form>'
+      + '.err{color:#f29a9a}';
+    document.head.appendChild(estilo);
+    document.body.innerHTML = '<form>'
       + '<h1>Aqua<b>Control</b></h1><p>Datos de tu servidor MQTT (EMQX Cloud). Se piden una sola vez en este dispositivo.</p>'
       + (msg ? '<p class="err"></p>' : '')
       + '<label>Servidor<input name="servidor" required autocomplete="off" placeholder="xxxx.ala.eu-central-1.emqxsl.com"></label>'
       + '<label>Usuario<input name="usuario" required autocomplete="username"></label>'
       + '<label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label>'
-      + '<button>Entrar</button></form></body>';
+      + '<button>Entrar</button></form>';
     if (msg) document.querySelector('.err').textContent = msg;
     const f = document.querySelector('form');
     f.servidor.value = prev.servidor || '';
@@ -169,6 +172,8 @@ window.AQ_DATOS = {"layouts": {"tablet": "<!DOCTYPE html>\n<html lang=\"es\"><he
 
   let cfgNube = null;
   if (NUBE) {
+    // Se registra acá y no en index.html: la pantalla de ingreso o la app reemplazan la página antes
+    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
     cfgNube = leer(CLAVE_MQTT);
     if (!cfgNube || !cfgNube.servidor || !cfgNube.clave) { pedirClave(''); return; }
   }
