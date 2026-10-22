@@ -121,3 +121,19 @@ sensor:
           - script.execute:
               id: aviso
               texto: "Temperatura alta: revisá el calentador y la luz"
+
+interval:   # historial: cada 5 min la central deja una lectura en Supabase (webapp/supabase/esquema.sql)
+  - interval: 5min
+    then:
+      - if:
+          condition:
+            lambda: 'return !std::isnan(id(temp_agua).state);'
+          then:
+            - http_request.post:
+                url: !secret supabase_lectura_url
+                request_headers:
+                  Content-Type: application/json
+                  apikey: !secret supabase_key
+                json:
+                  clave: !secret supabase_clave_central
+                  temp: !lambda 'return str_sprintf("%.2f", id(temp_agua).state);'

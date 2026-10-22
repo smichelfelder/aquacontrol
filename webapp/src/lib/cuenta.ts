@@ -80,3 +80,12 @@ export async function abrirCuenta() {
   window.addEventListener('online', () => { if (pendiente) subir() })
   return fila?.mqtt ?? null
 }
+
+/* ---------- Historial de las sondas (lo sube la central) ---------- */
+export interface FilaHistorial { momento: string; promedio: number; minimo: number; maximo: number }
+
+export async function leerHistorial(periodo: string) {
+  const { data, error } = await sb!.rpc('historial', { periodo })
+  if (error) throw error
+  return (data ?? []) as FilaHistorial[]
+}

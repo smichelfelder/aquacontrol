@@ -49,6 +49,8 @@ Sin las variables `VITE_SUPABASE_*`, la app funciona como antes: pide los datos 
    - En Vercel: en el proyecto, **Settings → Environment Variables**, cargá `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` y volvé a publicar.
 6. En **SQL Editor**, pegá [supabase/cargar-emqx.sql](supabase/cargar-emqx.sql), reemplazá los valores entre `<>` (servidor, usuario y contraseña de EMQX, y tu email) y apretá **Run**. Los valores reales ponelos solo en Supabase, no en el archivo. Para cambiar los datos de EMQX más adelante, se repite este paso.
 
+7. **Historial de temperatura:** si la base ya estaba armada, volvé a pegar [supabase/esquema.sql](supabase/esquema.sql) (se puede repetir sin perder nada). Después pegá [supabase/cargar-central.sql](supabase/cargar-central.sql) con una clave larga para la central, y poné esa misma clave en `firmware/secrets.yaml` (`supabase_clave_central`), junto con `supabase_lectura_url` y `supabase_key` (ver `secrets.example.yaml`). Volvé a flashear la central: desde ahí guarda una lectura cada 5 minutos, aunque no haya ninguna app abierta. El historial empieza vacío.
+
 Si la cuenta no tiene los datos de EMQX, o EMQX los rechaza, la app muestra un aviso con **Reintentar** y **Cerrar sesión**, en lugar de pedirlos.
 
 La *publishable key* puede estar en la app: sola no da acceso a nada, porque las reglas de la tabla piden haber entrado con el usuario.
@@ -73,8 +75,11 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | `src/lib/central.ts` | Conexión con la central: SSE en casa, MQTT en la nube y demo. Reemplaza a `app/puente.js`. |
 | `src/lib/cuenta.ts` | La cuenta en Supabase: entrar, datos de EMQX y sincronización de lo cargado en la app. |
 | `src/lib/guardado.ts` | Lo que se carga en la app (peces, plantas, plan de abonos, medidas). Queda en el dispositivo, con la misma clave que la app anterior, y se sincroniza con la cuenta. |
-| `supabase/esquema.sql` | La tabla de la cuenta y sus permisos. |
+| `supabase/esquema.sql` | La tabla de la cuenta, la de las lecturas y sus permisos. |
 | `supabase/cargar-emqx.sql` | Carga o cambia los datos de EMQX de la cuenta. |
+| `supabase/cargar-central.sql` | Carga o cambia la clave con la que la central sube el historial. |
+| `src/lib/historial.ts` | Lee el historial de temperatura agrupado (día, semana, mes, año); en demo, datos de ejemplo. |
+| `src/components/HistorialTemperatura.tsx` | El gráfico del historial, que se abre al tocar la temperatura en Inicio. |
 | `src/lib/acuario.ts` | Cálculos: litros netos, dosis, objetivos según los peces y estado de cada especie. |
 | `src/data/` | Biblioteca de peces y plantas, sacada del diseño. |
 | `src/components/ui/` | Componentes de shadcn (`npx shadcn@latest add <componente>`). |
