@@ -69,4 +69,14 @@ export const ABONOS: Abono[] = [
   { id: 'k', nombre: 'Flourish Potassium', corto: 'Potassium', ml: 5, litros: 125, frec: '2-3' },
 ]
 
+/**
+ * Cómo conviene repartir machos y hembras: vivíparos (1 macho cada 2–3 hembras), un solo macho
+ * (betta), un macho con hembras (harén) o en parejas. Las que no están se cargan sin sexar.
+ */
+export type Sexado = 'vivo' | 'unmacho' | 'harem' | 'pareja'
+export const SEXADO: Record<string, Sexado> = {
+  guppy: 'vivo', molly: 'vivo', platy: 'vivo', endler: 'vivo', espada: 'vivo', betta: 'unmacho',
+  gouenano: 'harem', goumiel: 'harem', gouperla: 'harem', apisto: 'harem', ramirezi: 'pareja', krib: 'pareja', boliviano: 'pareja',
+}
+
 export const HORAS_COMIDA = [9, 19]  // igual que hours: en firmware/aquacontrol.yaml

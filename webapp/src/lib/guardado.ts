@@ -5,8 +5,11 @@ import { ABONOS, type Abono } from '@/data'
 
 const CLAVE = 'aquacontrol.v1'
 
+/** Una especie mía. cant es el total (la app anterior solo guardaba eso); sin m, h y s son todos sin sexar. */
+export interface MiPez { id: string; cant: number; m?: number; h?: number; s?: number }
+
 export interface Guardado {
-  peces: { id: string; cant: number }[]
+  peces: MiPez[]
   mias: string[]                                   // ids de plantas
   abonos: Abono[]                                  // la lista de «Abonos»
   plan: Record<string, number[]>                   // id del abono → lunes a domingo, 1 = toca
@@ -23,7 +26,7 @@ export interface Guardado {
 // Los valores de ejemplo del diseño
 const INICIAL: Guardado = {
   peces: [
-    { id: 'guppy', cant: 8 }, { id: 'molly', cant: 4 }, { id: 'neon', cant: 12 },
+    { id: 'guppy', cant: 8, m: 2, h: 6, s: 0 }, { id: 'molly', cant: 4, m: 1, h: 3, s: 0 }, { id: 'neon', cant: 12 },
     { id: 'cory', cant: 6 }, { id: 'garra', cant: 3 },
   ],
   mias: ['rotala-rotundifolia', 'hygrophila-polysperma', 'anubias-barteri', 'musgo-christmas', 'monte-carlo', 'staurogyne-repens'],
