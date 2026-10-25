@@ -85,7 +85,9 @@ function poner(id: string, valor: unknown) {
   visto(id)
   const k = MAPA[id]
   if (!k) return
-  const v = typeof valor === 'number' && !isFinite(valor) ? null : valor
+  // En casa, los números (number/…) llegan como texto: "24.0"
+  const n = typeof valor === 'string' ? parseFloat(valor) : valor
+  const v = typeof n === 'number' && !isFinite(n) ? null : n
   avisar({ sondas: { ...estado.sondas, [k]: v ?? null } })
 }
 
