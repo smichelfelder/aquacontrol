@@ -4,6 +4,7 @@ import { useCentral } from '@/lib/central'
 import { fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
 import { cn } from '@/lib/utils'
 import { Ingreso } from '@/pantallas/Ingreso'
+import { Abonos } from '@/pantallas/Abonos'
 import { Inicio } from '@/pantallas/Inicio'
 
 export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'acuario'
@@ -36,7 +37,7 @@ export default function App() {
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
         <Encabezado titulo={actual.titulo} inicio={seccion === 'inicio'} conectado={central.conectado} />
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
-          {seccion === 'inicio' ? <Inicio ir={setSeccion} /> : <Pendiente />}
+          {seccion === 'inicio' ? <Inicio ir={setSeccion} /> : seccion === 'abonos' ? <Abonos /> : <Pendiente />}
         </main>
       </div>
     </div>
