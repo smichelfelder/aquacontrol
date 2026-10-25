@@ -71,7 +71,8 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | Archivo | Qué hay |
 |---|---|
 | `src/App.tsx` | Marco de la app: secciones (abajo en el móvil, a la izquierda en la tablet) y encabezado. |
-| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio` e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
+| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio`, `MiAcuario` (medidas, litros, rango de los avisos de temperatura, equipo y abonos) e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
+| `src/components/Acuario3D.tsx` | El acuario en 3D a escala, con las medidas en las aristas. Se gira arrastrando. |
 | `src/lib/central.ts` | Conexión con la central: SSE en casa, MQTT en la nube y demo. Reemplaza a `app/puente.js`. |
 | `src/lib/cuenta.ts` | La cuenta en Supabase: entrar, datos de EMQX y sincronización de lo cargado en la app. |
 | `src/lib/guardado.ts` | Lo que se carga en la app (peces, plantas, plan de abonos, medidas). Queda en el dispositivo, con la misma clave que la app anterior, y se sincroniza con la cuenta. |
@@ -80,15 +81,14 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | `supabase/cargar-central.sql` | Carga o cambia la clave con la que la central sube el historial. |
 | `src/lib/historial.ts` | Lee el historial de temperatura agrupado (día, semana, mes, año); en demo, datos de ejemplo. |
 | `src/components/HistorialTemperatura.tsx` | El gráfico del historial, que se abre al tocar la temperatura en Inicio. |
-| `src/lib/acuario.ts` | Cálculos: litros netos, dosis, objetivos según los peces y estado de cada especie. |
+| `src/lib/acuario.ts` | Cálculos: medidas y litros netos, dosis, equipo, ocupación de peces, objetivos según los peces y estado de cada especie. |
 | `src/data/` | Biblioteca de peces y plantas, sacada del diseño. |
 | `src/components/ui/` | Componentes de shadcn (`npx shadcn@latest add <componente>`). |
 | `src/index.css` | Colores y tipografías del diseño, puestos como variables de Tailwind y de shadcn. |
 
 ## Pendiente
 
-- Pantallas: Mis peces, Mis plantas, Abonos y Mi acuario, con las fotos de los peces.
+- Pantallas: Mis peces, Mis plantas y Abonos, con las fotos de los peces.
 - Crear el proyecto de prueba en Vercel y, al terminar, hacer el cambio (ver «Publicación en Vercel»).
 - Crear el proyecto de Supabase y el usuario (ver «Cuenta»).
-- Un botón para cerrar la sesión (por ejemplo, en «Mi acuario»).
 - Decidir qué versión sirve la central en `http://aquacontrol.local`.

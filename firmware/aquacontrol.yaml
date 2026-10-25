@@ -1,7 +1,3 @@
-substitutions:
-  temp_min: "24.0"   # avisa si baja de esto (°C)
-  temp_max: "27.0"   # avisa si sube de esto (°C)
-
 esphome:
   name: aquacontrol
   friendly_name: AquaControl
@@ -99,6 +95,37 @@ button:
           id: aviso
           texto: "AquaControl: los avisos funcionan"
 
+# Rango de temperatura aceptable: se cambia desde la app («Mi acuario») y queda guardado en la
+# central, así los avisos siguen funcionando aunque no haya ninguna app abierta.
+number:
+  - platform: template
+    id: temp_min
+    name: "Temperatura mínima"
+    unit_of_measurement: "°C"
+    min_value: 15
+    max_value: 35
+    step: 0.5
+    initial_value: 24
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: temp_max
+    name: "Temperatura máxima"
+    unit_of_measurement: "°C"
+    min_value: 15
+    max_value: 35
+    step: 0.5
+    initial_value: 27
+    restore_value: true
+    optimistic: true
+    entity_category: config
+
+globals:
+  - id: temp_fuera   # -1: avisó que está baja · 1: avisó que está alta · 0: en rango
+    type: int
+    initial_value: "0"
+
 one_wire:
   - platform: gpio
     pin: GPIO4
@@ -110,17 +137,30 @@ sensor:
     update_interval: 60s
     filters:
       - offset: 0.0   # ajuste fino, ver «Pruebas»
-    on_value_range:
-      - below: ${temp_min}
-        then:
-          - script.execute:
-              id: aviso
-              texto: "Temperatura baja: revisá el calentador"
-      - above: ${temp_max}
-        then:
-          - script.execute:
-              id: aviso
-              texto: "Temperatura alta: revisá el calentador y la luz"
+    on_value:
+      # Un aviso al salir del rango; vuelve a avisar recién después de haber vuelto a él
+      # (con 0,2 °C de margen, para que no lleguen avisos seguidos si oscila justo en el límite).
+      - if:
+          condition:
+            lambda: 'return x < id(temp_min).state && id(temp_fuera) != -1;'
+          then:
+            - globals.set: { id: temp_fuera, value: "-1" }
+            - script.execute:
+                id: aviso
+                texto: !lambda 'return str_sprintf("Temperatura baja: %.1f °C (mínimo %.1f °C). Revisá el calentador", x, id(temp_min).state);'
+      - if:
+          condition:
+            lambda: 'return x > id(temp_max).state && id(temp_fuera) != 1;'
+          then:
+            - globals.set: { id: temp_fuera, value: "1" }
+            - script.execute:
+                id: aviso
+                texto: !lambda 'return str_sprintf("Temperatura alta: %.1f °C (máximo %.1f °C). Revisá el calentador y la luz", x, id(temp_max).state);'
+      - if:
+          condition:
+            lambda: 'return x >= id(temp_min).state + 0.2 && x <= id(temp_max).state - 0.2;'
+          then:
+            - globals.set: { id: temp_fuera, value: "0" }
 
 interval:   # historial: cada 5 min la central deja una lectura en Supabase (webapp/supabase/esquema.sql)
   - interval: 5min

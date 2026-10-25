@@ -17,6 +17,8 @@ export interface Sondas {
   nivelBajo: boolean | null      // true = hay agua en el sensor
   nivelCritico: boolean | null
   corriente: boolean | null
+  tempMin: number | null         // avisos por Telegram: los fija «Mi acuario» en la central
+  tempMax: number | null
 }
 
 export type { Credenciales }
@@ -45,10 +47,14 @@ const MAPA: Record<string, keyof Sondas> = {
   'binary_sensor/Agua en nivel bajo': 'nivelBajo',
   'binary_sensor/Agua en nivel crítico': 'nivelCritico',
   'binary_sensor/Corriente de red': 'corriente',
+  'number/Temperatura mínima': 'tempMin',
+  'number/Temperatura máxima': 'tempMax',
 }
 
 const CLAVE_MQTT = 'aquacontrol.mqtt'
-const SIN_DATOS: Sondas = { temp: null, ph: null, tds: null, bateria: null, nivelBajo: null, nivelCritico: null, corriente: null }
+const SIN_DATOS: Sondas = {
+  temp: null, ph: null, tds: null, bateria: null, nivelBajo: null, nivelCritico: null, corriente: null, tempMin: null, tempMax: null,
+}
 
 function elegirModo(): EstadoCentral['modo'] {
   const q = new URLSearchParams(location.search)
@@ -66,7 +72,8 @@ const avisar = (cambio: Partial<EstadoCentral>) => {
 }
 
 let ultimo = 0  // cuándo llegó el último dato de la central
-let enviar: (id: string) => Promise<boolean> = () => Promise.resolve(false)
+// Botones: sin valor (PRESS). Números (number/…): el valor nuevo.
+let enviar: (id: string, valor?: number) => Promise<boolean> = () => Promise.resolve(false)
 
 function visto(id: string) {
   if (estado.vistos.has(id)) return
@@ -93,8 +100,8 @@ function conectarLocal() {
   // La central manda un «ping» cada pocos segundos: si dejan de llegar, no hay conexión
   es.addEventListener('ping', () => { ultimo = Date.now() })
   es.onopen = () => { ultimo = Date.now() }
-  enviar = (id) => {
-    const url = '/' + id.split('/').map(encodeURIComponent).join('/') + '/press'
+  enviar = (id, valor) => {
+    const url = '/' + id.split('/').map(encodeURIComponent).join('/') + (valor == null ? '/press' : '/set?value=' + valor)
     return fetch(url, { method: 'POST' }).then((r) => r.ok).catch(() => false)
   }
   setInterval(() => {
@@ -156,21 +163,25 @@ async function conectarNube(cfg: Credenciales) {
     if (txt === 'ON' || txt === 'OFF') poner(id, txt === 'ON')
     else { const n = parseFloat(txt); poner(id, isFinite(n) ? n : null) }
   })
-  enviar = (id) => {
+  enviar = (id, valor) => {
     if (!ordenes[id] || !cli.connected) return Promise.resolve(false)
-    cli.publish(ordenes[id], 'PRESS')
+    cli.publish(ordenes[id], valor == null ? 'PRESS' : String(valor))
     return Promise.resolve(true)
   }
 }
 
 /* ---------- Demo ---------- */
 function conectarDemo() {
-  ;['button/Alimentar', 'button/Filtro: encender', 'button/Filtro: apagar'].forEach(visto)
+  ;['button/Alimentar', 'button/Filtro: encender', 'button/Filtro: apagar', 'number/Temperatura mínima', 'number/Temperatura máxima'].forEach(visto)
   avisar({
     conectado: true,
-    sondas: { temp: 25.4, ph: 6.8, tds: 180, bateria: 100, nivelBajo: true, nivelCritico: true, corriente: true },
+    sondas: { temp: 25.4, ph: 6.8, tds: 180, bateria: 100, nivelBajo: true, nivelCritico: true, corriente: true, tempMin: 24, tempMax: 27 },
   })
-  enviar = () => Promise.resolve(true)
+  enviar = (id, valor) => {
+    // La central de verdad devuelve el valor nuevo como estado: acá se simula con un poco de demora
+    if (valor != null) setTimeout(() => poner(id, valor), 300)
+    return Promise.resolve(true)
+  }
 }
 
 /* ---------- Credenciales de MQTT ---------- */
@@ -241,6 +252,8 @@ else if (hayCuenta) {
 
 export const tiene = (id: string) => estado.vistos.has(id)
 export const pulsar = (id: string) => (tiene(id) ? enviar(id) : Promise.resolve(false))
+/** Cambia un número de la central (number/…). */
+export const fijar = (id: string, valor: number) => (tiene(id) ? enviar(id, valor) : Promise.resolve(false))
 
 export function useCentral() {
   return useSyncExternalStore((f) => { subs.add(f); return () => subs.delete(f) }, () => estado)
