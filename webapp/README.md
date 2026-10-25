@@ -32,7 +32,7 @@ Fuera de casa, la app se usa con **un único usuario con contraseña**. Los disp
 - **Los datos de EMQX:** se cargan una sola vez desde Supabase (paso 6). La app nunca los pide: todos los dispositivos usan siempre los mismos.
 - **Peces, plantas, plan de abonos y medidas del acuario:** se ven iguales en todos los dispositivos. Cada cambio se sube enseguida, y al volver a la app se trae lo que se haya cambiado desde otro lado.
 
-Cada dispositivo pide solo el usuario y la contraseña de AquaControl, **una sola vez**, porque la sesión queda abierta. La primera vez que se entra, la cuenta se queda con los peces y plantas que ya había en ese dispositivo.
+Cada dispositivo pide solo el usuario y la contraseña de AquaControl, **una sola vez**, porque la sesión queda abierta. La primera vez que se entra, la cuenta se queda con los peces y plantas que ya había en ese dispositivo. Para cerrar la sesión en un dispositivo está el ícono de salida al pie del menú lateral (en el móvil, arriba a la derecha); pide confirmación.
 
 Las reglas de la tabla hacen que solo ese usuario pueda leer su fila. Si Supabase no responde, la app usa los últimos datos de EMQX que guardó en el dispositivo.
 

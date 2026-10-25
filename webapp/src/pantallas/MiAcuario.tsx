@@ -3,8 +3,7 @@ import { Acuario3D } from '@/components/Acuario3D'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { equipo, fmt, medida, medidas, misPeces, objetivo, ocupacion, PARTE_AGUA } from '@/lib/acuario'
-import { cerrarSesion, fijar, useCentral } from '@/lib/central'
-import { hayCuenta } from '@/lib/cuenta'
+import { fijar, useCentral } from '@/lib/central'
 import { useGuardado, type Guardado } from '@/lib/guardado'
 import { cn } from '@/lib/utils'
 import type { Seccion } from '@/App'
@@ -15,7 +14,6 @@ const COLOR_NIVEL = ['text-primary', 'text-aviso', 'text-alerta']
 
 export function MiAcuario({ ir }: { ir: (s: Seccion) => void }) {
   const [g, cambiar] = useGuardado()
-  const central = useCentral()
   const m = medidas(g)
 
   return (
@@ -57,12 +55,6 @@ export function MiAcuario({ ir }: { ir: (s: Seccion) => void }) {
         <Ocupacion g={g} ir={ir} />
 
         <Lista titulo="EQUIPO RECOMENDADO" filas={equipo(m.neto).map((e) => ({ ...e, sub: e.nota }))} />
-
-        {hayCuenta && central.modo === 'nube' && (
-          <Button variant="ghost" onClick={cerrarSesion} className="h-11 self-center rounded-full px-5 text-muted-foreground">
-            Cerrar sesión en este dispositivo
-          </Button>
-        )}
       </div>
     </div>
   )
