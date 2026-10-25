@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Acuario3D } from '@/components/Acuario3D'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { dosisMl, equipo, reglaAbono, fmt, medida, medidas, misPeces, objetivo, ocupacion, PARTE_AGUA } from '@/lib/acuario'
+import { equipo, fmt, medida, medidas, misPeces, objetivo, ocupacion, PARTE_AGUA } from '@/lib/acuario'
 import { cerrarSesion, fijar, useCentral } from '@/lib/central'
 import { hayCuenta } from '@/lib/cuenta'
 import { useGuardado, type Guardado } from '@/lib/guardado'
@@ -57,10 +57,6 @@ export function MiAcuario({ ir }: { ir: (s: Seccion) => void }) {
         <Ocupacion g={g} ir={ir} />
 
         <Lista titulo="EQUIPO RECOMENDADO" filas={equipo(m.neto).map((e) => ({ ...e, sub: e.nota }))} />
-        <Lista titulo="ABONOS SEGÚN TUS LITROS"
-          accion={<Button variant="outline" onClick={() => ir('abonos')}
-            className="h-10 rounded-full border-primary/35 bg-transparent px-3.5 text-sm font-normal text-secondary-foreground">Calendario</Button>}
-          filas={g.abonos.map((a) => ({ nombre: a.nombre, sub: reglaAbono(a), valor: dosisMl(m.neto, a.ml, a.litros), color: 'text-primary' }))} />
 
         {hayCuenta && central.modo === 'nube' && (
           <Button variant="ghost" onClick={cerrarSesion} className="h-11 self-center rounded-full px-5 text-muted-foreground">
@@ -228,15 +224,11 @@ function Ocupacion({ g, ir }: { g: Guardado; ir: (s: Seccion) => void }) {
   )
 }
 
-function Lista({ titulo, filas, accion }: {
-  titulo: string; accion?: ReactNode
-  filas: { nombre: string; sub: string; valor: string; color?: string }[]
-}) {
+function Lista({ titulo, filas }: { titulo: string; filas: { nombre: string; sub: string; valor: string }[] }) {
   return (
     <section className={cn(PANEL, 'overflow-hidden')}>
       <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-3 pb-1.5 md:px-5">
         <h2 className={TITULO}>{titulo}</h2>
-        {accion}
       </div>
       {filas.map((f) => (
         <div key={f.nombre} className="flex items-center justify-between gap-2.5 border-t border-[rgb(170_225_212/0.08)] px-4 py-3 md:px-5">
@@ -244,7 +236,7 @@ function Lista({ titulo, filas, accion }: {
             <span className="text-base md:text-[17px]">{f.nombre}</span>
             <span className="text-[13px] text-tenue">{f.sub}</span>
           </span>
-          <span className={cn('font-heading text-lg whitespace-nowrap md:text-xl', f.color)}>{f.valor}</span>
+          <span className="font-heading text-lg whitespace-nowrap md:text-xl">{f.valor}</span>
         </div>
       ))}
     </section>

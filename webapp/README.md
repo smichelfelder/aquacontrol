@@ -71,7 +71,7 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | Archivo | Qué hay |
 |---|---|
 | `src/App.tsx` | Marco de la app: secciones (abajo en el móvil, a la izquierda en la tablet) y encabezado. |
-| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio`, `MiAcuario` (medidas, litros, rango de los avisos de temperatura, equipo y abonos) e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
+| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio`, `MiAcuario` (medidas, litros, rango de los avisos de temperatura, ocupación de peces y equipo) e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
 | `src/components/Acuario3D.tsx` | El acuario en 3D a escala, con las medidas en las aristas. Se gira arrastrando. |
 | `src/lib/central.ts` | Conexión con la central: SSE en casa, MQTT en la nube y demo. Reemplaza a `app/puente.js`. |
 | `src/lib/cuenta.ts` | La cuenta en Supabase: entrar, datos de EMQX y sincronización de lo cargado en la app. |
