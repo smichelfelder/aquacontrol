@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Acuario3D } from '@/components/Acuario3D'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ABONOS } from '@/data'
-import { dosisMl, equipo, fmt, medida, medidas, misPeces, objetivo, ocupacion, PARTE_AGUA } from '@/lib/acuario'
+import { dosisMl, equipo, reglaAbono, fmt, medida, medidas, misPeces, objetivo, ocupacion, PARTE_AGUA } from '@/lib/acuario'
 import { cerrarSesion, fijar, useCentral } from '@/lib/central'
 import { hayCuenta } from '@/lib/cuenta'
 import { useGuardado, type Guardado } from '@/lib/guardado'
@@ -61,7 +60,7 @@ export function MiAcuario({ ir }: { ir: (s: Seccion) => void }) {
         <Lista titulo="ABONOS SEGÚN TUS LITROS"
           accion={<Button variant="outline" onClick={() => ir('abonos')}
             className="h-10 rounded-full border-primary/35 bg-transparent px-3.5 text-sm font-normal text-secondary-foreground">Calendario</Button>}
-          filas={ABONOS.map((a) => ({ nombre: a.nombre, sub: a.regla, valor: dosisMl(m.neto, a.ml, a.litros), color: 'text-primary' }))} />
+          filas={g.abonos.map((a) => ({ nombre: a.nombre, sub: reglaAbono(a), valor: dosisMl(m.neto, a.ml, a.litros), color: 'text-primary' }))} />
 
         {hayCuenta && central.modo === 'nube' && (
           <Button variant="ghost" onClick={cerrarSesion} className="h-11 self-center rounded-full px-5 text-muted-foreground">

@@ -1,5 +1,5 @@
 // Cálculos del acuario: los mismos que hacía renderVals() del diseño, sin nada de pantalla.
-import { ABONOS, PECES, PLANTAS, type Pez, type Planta, type Rango } from '@/data'
+import { FRECUENCIAS, PECES, PLANTAS, type Abono, type Pez, type Planta, type Rango } from '@/data'
 import type { Guardado } from './guardado'
 import type { Sondas } from './central'
 
@@ -59,9 +59,18 @@ export function ocupacion(g: Guardado) {
   return { pct, libre: Math.max(0, Math.round(neto * 0.8 - usados)), nivel: (pct <= 80 ? 0 : pct <= 100 ? 1 : 2) as Nivel }
 }
 
+/** ml por toma para los litros netos, redondeado a 0,1 ml. */
+export const dosis = (neto: number, ml: number, litros: number) => Math.round((neto / litros) * ml * 10) / 10
+
 export function dosisMl(neto: number, ml: number, litros: number) {
-  return fmt(Math.round((neto / litros) * ml * 10) / 10, 1) + ' ml'
+  return fmt(dosis(neto, ml, litros), 1) + ' ml'
 }
+
+/** «5 ml cada 250 L», como lo dice la etiqueta. */
+export const reglaAbono = (a: { ml: number; litros: number }) => `${fmt(a.ml, 1).replace(',0', '')} ml cada ${a.litros} L`
+
+/** Los días de un abono; uno sin plan guardado arranca con los de su frecuencia. */
+export const diasAbono = (g: Guardado, a: Abono) => g.plan[a.id] ?? FRECUENCIAS[a.frec].plan
 
 /** Lunes = 0, como el plan de abonos. */
 export const indiceDia = (d: Date) => (d.getDay() + 6) % 7
@@ -69,7 +78,7 @@ export const indiceDia = (d: Date) => (d.getDay() + 6) % 7
 export function abonosDeHoy(g: Guardado, hoy: Date) {
   const neto = litrosNetos(g)
   const i = indiceDia(hoy)
-  return ABONOS.filter((a) => g.plan[a.id]?.[i]).map((a) => ({ nombre: a.corto, dosis: dosisMl(neto, a.ml, a.litros) }))
+  return g.abonos.filter((a) => diasAbono(g, a)[i]).map((a) => ({ nombre: a.corto ?? a.nombre, dosis: dosisMl(neto, a.ml, a.litros) }))
 }
 
 /** Rango que les sirve a todos mis peces a la vez para una sonda. */
