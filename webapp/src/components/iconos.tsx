@@ -20,6 +20,9 @@ export const IconoCalendario = (p: P) => <Trazo {...p}><rect x="4" y="5" width="
 export const IconoAcuario = (p: P) => <Trazo {...p}><rect x="3" y="5" width="18" height="13" rx="1.5" /><path d="M3 9.5h18M7 18v2M17 18v2" /></Trazo>
 export const IconoOlas = (p: P) => <Trazo {...p}><path d="M4 7c3 0 3 2 6 2s3-2 6-2 3 2 4 2M4 12c3 0 3 2 6 2s3-2 6-2 3 2 4 2M4 17c3 0 3 2 6 2s3-2 6-2 3 2 4 2" /></Trazo>
 export const IconoSalir = (p: P) => <Trazo {...p}><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10" /></Trazo>
+export const IconoVolver = (p: P) => <Trazo strokeWidth={2} {...p}><path d="M19 12H5M11 6l-6 6 6 6" /></Trazo>
+export const IconoMas = (p: P) => <Trazo strokeWidth={2.2} {...p}><path d="M12 5v14M5 12h14" /></Trazo>
+export const IconoBuscar = (p: P) => <Trazo strokeWidth={2} {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></Trazo>
 export const IconoFlecha = (p: P) => <Trazo strokeWidth={2} {...p}><path d="M9 6l6 6-6 6" /></Trazo>
 
 /** La gota de AquaControl (página «Logo AquaControl» del diseño). */

@@ -1,5 +1,5 @@
-import { useState, type ComponentType } from 'react'
-import { IconoAcuario, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, IconoSalir, Logo } from '@/components/iconos'
+import { useState, type ComponentType, type ReactNode } from 'react'
+import { IconoAcuario, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, IconoSalir, IconoVolver, Logo } from '@/components/iconos'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cerrarSesion, useCentral } from '@/lib/central'
@@ -10,8 +10,12 @@ import { Abonos } from '@/pantallas/Abonos'
 import { Ingreso } from '@/pantallas/Ingreso'
 import { Inicio } from '@/pantallas/Inicio'
 import { MiAcuario } from '@/pantallas/MiAcuario'
+import { Peces } from '@/pantallas/Peces'
 
 export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'acuario'
+
+/** Lo que una pantalla pone en la barra de arriba: otro título, volver y un botón a la derecha (solo tablet). */
+export interface Barra { titulo: string; atras?: () => void; accion?: ReactNode }
 
 const SECCIONES: { id: Seccion; corto: string; titulo: string; Icono: ComponentType<{ size?: number }> }[] = [
   { id: 'inicio', corto: 'Inicio', titulo: 'Inicio', Icono: IconoInicio },
@@ -25,6 +29,7 @@ export default function App() {
   const central = useCentral()
   const [seccion, setSeccion] = useState<Seccion>('inicio')
   const [saliendo, setSaliendo] = useState(false)
+  const [barra, setBarra] = useState<Barra | null>(null)
   if (central.pide) return <Ingreso pide={central.pide} />
   if (central.cargando) {
     return (
@@ -42,11 +47,13 @@ export default function App() {
     <div className="flex min-h-dvh flex-col md:flex-row">
       <Secciones actual={seccion} ir={setSeccion} salir={salir} />
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
-        <Encabezado titulo={actual.titulo} inicio={seccion === 'inicio'} conectado={central.conectado} salir={salir} />
+        <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} accion={barra?.accion}
+          inicio={seccion === 'inicio'} conectado={central.conectado} salir={salir} />
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
           {seccion === 'inicio' ? <Inicio ir={setSeccion} />
             : seccion === 'abonos' ? <Abonos />
-              : seccion === 'acuario' ? <MiAcuario ir={setSeccion} /> : <Pendiente />}
+              : seccion === 'acuario' ? <MiAcuario ir={setSeccion} />
+                : seccion === 'peces' ? <Peces barra={setBarra} /> : <Pendiente />}
         </main>
       </div>
       <CerrarSesion abierto={saliendo} cambiar={setSaliendo} />
@@ -74,11 +81,18 @@ function CerrarSesion({ abierto, cambiar }: { abierto: boolean; cambiar: (abiert
 
 const BOTON_SALIR = 'cursor-pointer items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none'
 
-function Encabezado({ titulo, inicio, conectado, salir }: { titulo: string; inicio: boolean; conectado: boolean; salir?: () => void }) {
+function Encabezado({ titulo, atras, accion, inicio, conectado, salir }: {
+  titulo: string; atras?: () => void; accion?: ReactNode; inicio: boolean; conectado: boolean; salir?: () => void
+}) {
   const ahora = useAhora()
   return (
     <header className="flex h-16 items-center gap-2.5 px-4 pt-[env(safe-area-inset-top)] md:h-auto md:min-h-14 md:gap-3 md:px-7 md:pt-[18px] md:pb-4">
-      <span className="md:hidden"><Logo /></span>
+      {atras ? (
+        <button type="button" onClick={atras} aria-label="Volver"
+          className="-ml-2 flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none md:ml-0 md:border md:border-[rgb(170_225_212/0.25)]">
+          <IconoVolver size={22} />
+        </button>
+      ) : <span className="md:hidden"><Logo /></span>}
       <div className="flex min-w-0 grow flex-col">
         <h1 className="truncate font-heading text-[22px] font-medium md:text-[30px]">{titulo}</h1>
         {inicio && <div className="hidden text-base text-muted-foreground md:block">{fechaTxt(ahora)}</div>}
@@ -89,6 +103,7 @@ function Encabezado({ titulo, inicio, conectado, salir }: { titulo: string; inic
           <span className="font-heading text-[52px] leading-none font-medium tracking-[-0.02em]">{horaTxt(ahora)}</span>
         </div>
       )}
+      {accion && <div className="hidden shrink-0 md:block">{accion}</div>}
       {/* En el móvil no hay menú lateral: cerrar sesión va arriba a la derecha */}
       {salir && (
         <button type="button" onClick={salir} aria-label="Cerrar sesión" className={cn(BOTON_SALIR, 'flex size-11 shrink-0 md:hidden')}>
