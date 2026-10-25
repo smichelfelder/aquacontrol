@@ -71,7 +71,7 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 | Archivo | Qué hay |
 |---|---|
 | `src/App.tsx` | Marco de la app: secciones (abajo en el móvil, a la izquierda en la tablet) y encabezado. |
-| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio` e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
+| `src/pantallas/` | Una pantalla por sección. Por ahora están `Inicio`, `Abonos` (el plan semanal) e `Ingreso` (la cuenta, los avisos y, sin cuenta, los datos de EMQX). |
 | `src/lib/central.ts` | Conexión con la central: SSE en casa, MQTT en la nube y demo. Reemplaza a `app/puente.js`. |
 | `src/lib/cuenta.ts` | La cuenta en Supabase: entrar, datos de EMQX y sincronización de lo cargado en la app. |
 | `src/lib/guardado.ts` | Lo que se carga en la app (peces, plantas, plan de abonos, medidas). Queda en el dispositivo, con la misma clave que la app anterior, y se sincroniza con la cuenta. |
@@ -87,7 +87,7 @@ Hoy el proyecto de Vercel publica `web/` (la app anterior) según el `vercel.jso
 
 ## Pendiente
 
-- Pantallas: Mis peces, Mis plantas, Abonos y Mi acuario, con las fotos de los peces.
+- Pantallas: Mis peces, Mis plantas y Mi acuario, con las fotos de los peces.
 - Crear el proyecto de prueba en Vercel y, al terminar, hacer el cambio (ver «Publicación en Vercel»).
 - Crear el proyecto de Supabase y el usuario (ver «Cuenta»).
 - Un botón para cerrar la sesión (por ejemplo, en «Mi acuario»).

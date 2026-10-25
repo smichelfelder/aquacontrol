@@ -48,12 +48,13 @@ export interface Abono {
   regla: string
   min: number
   max: number
+  frec: string     // lo que pide la etiqueta
 }
 
 export const ABONOS: Abono[] = [
-  { id: 'ec', nombre: 'Easy Carbo', corto: 'Easy Carbo', ml: 1, litros: 50, regla: '1 ml cada 50 L', min: 7, max: 7 },
-  { id: 'fl', nombre: 'Flourish', corto: 'Flourish', ml: 5, litros: 250, regla: '5 ml cada 250 L', min: 1, max: 2 },
-  { id: 'k', nombre: 'Flourish Potassium', corto: 'Potassium', ml: 5, litros: 125, regla: '5 ml cada 125 L', min: 2, max: 3 },
+  { id: 'ec', nombre: 'Easy Carbo', corto: 'Easy Carbo', ml: 1, litros: 50, regla: '1 ml cada 50 L', min: 7, max: 7, frec: 'etiqueta: diario' },
+  { id: 'fl', nombre: 'Flourish', corto: 'Flourish', ml: 5, litros: 250, regla: '5 ml cada 250 L', min: 1, max: 2, frec: 'etiqueta: 1–2 por semana' },
+  { id: 'k', nombre: 'Flourish Potassium', corto: 'Potassium', ml: 5, litros: 125, regla: '5 ml cada 125 L', min: 2, max: 3, frec: 'etiqueta: 2–3 por semana' },
 ]
 
 export const HORAS_COMIDA = [9, 19]  // igual que hours: en firmware/aquacontrol.yaml
