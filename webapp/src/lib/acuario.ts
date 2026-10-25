@@ -1,6 +1,6 @@
 // Cálculos del acuario: los mismos que hacía renderVals() del diseño, sin nada de pantalla.
-import { FRECUENCIAS, PECES, PLANTAS, type Abono, type Pez, type Planta, type Rango } from '@/data'
-import type { Guardado } from './guardado'
+import { FRECUENCIAS, PECES, PLANTAS, SEXADO, type Abono, type Pez, type Planta, type Rango } from '@/data'
+import type { Guardado, MiPez } from './guardado'
 import type { Sondas } from './central'
 
 export type Nivel = 0 | 1 | 2  // bien · revisar · problema
@@ -93,6 +93,32 @@ export function objetivo(g: Guardado, clave: 't' | 'p' | 'd', valor: number | nu
   return { rango: [lo, hi] as Rango, ok: dentro(valor, [lo, hi]) }
 }
 
+/** Machos, hembras y sin sexar de una especie mía. */
+export type Sexos = { m: number; h: number; s: number }
+export const sexos = (p: MiPez): Sexos =>
+  p.m == null && p.h == null && p.s == null ? { m: 0, h: 0, s: p.cant } : { m: p.m ?? 0, h: p.h ?? 0, s: p.s ?? 0 }
+export const conSexos = (id: string, x: Sexos): MiPez => ({ id, cant: x.m + x.h + x.s, ...x })
+
+/** Cómo se cargan n ejemplares de una especie al agregarla, según cómo conviene tenerlos. */
+export function reparto(id: string, n: number): Sexos {
+  const tipo = SEXADO[id]
+  if (tipo === 'vivo') { const m = Math.max(1, Math.round(n / 3)); return { m, h: Math.max(0, n - m), s: 0 } }
+  if (tipo === 'unmacho') return { m: 1, h: 0, s: Math.max(0, n - 1) }
+  if (tipo === 'harem') return { m: 1, h: Math.max(0, n - 1), s: 0 }
+  if (tipo === 'pareja') { const m = Math.floor(n / 2); return { m, h: n - m, s: 0 } }
+  return { m: 0, h: 0, s: n }
+}
+
+/** Aviso por la cantidad de machos y hembras. Nivel 0 = solo para saber (van a tener crías). */
+export function avisoSexos(id: string, m: number, h: number): Aviso | null {
+  const tipo = SEXADO[id]
+  if (tipo === 'vivo' && m > 0 && h < 2 * m) return { txt: 'Pocas hembras: conviene 2 o 3 hembras por macho para que no las acosen.', nivel: 1 }
+  if (tipo === 'vivo' && m > 0 && h > 0) return { txt: 'Con machos y hembras juntos van a tener crías.', nivel: 0 }
+  if (tipo === 'unmacho' && m > 1) return { txt: 'Dos machos se pelean: dejá uno solo.', nivel: 2 }
+  if ((tipo === 'harem' || tipo === 'pareja') && m > 1) return { txt: 'Más de un macho se disputan el territorio.', nivel: 1 }
+  return null
+}
+
 export const misPeces = (g: Guardado): Pez[] => g.peces.filter((p) => PECES[p.id]).map((p) => PECES[p.id])
 export const misPlantas = (g: Guardado): Planta[] => g.mias.filter((id) => PLANTAS[id]).map((id) => PLANTAS[id])
 
@@ -121,8 +147,8 @@ export function convivencia(g: Guardado, s: Sondas, pez: Pez) {
   return { avisos, nivel }
 }
 
-/** Lo que hay que revisar de un pez mío: agua fuera de rango y convivencia. */
-export function problemasPez(g: Guardado, s: Sondas, pez: Pez): Aviso[] {
+/** El agua que no le sirve a un pez: temperatura, pH y TDS fuera de lo que pide. */
+export function problemasAgua(s: Sondas, pez: Pez): Aviso[] {
   const lista: Aviso[] = []
   if (s.temp != null && !dentro(s.temp, pez.t)) {
     lista.push({ txt: `Temperatura ${s.temp < pez.t[0] ? 'baja' : 'alta'}: pide ${pez.t[0]}–${pez.t[1]} °C y el agua está a ${fmt(s.temp, 1)} °C.`, nivel: 1 })
@@ -133,7 +159,12 @@ export function problemasPez(g: Guardado, s: Sondas, pez: Pez): Aviso[] {
   if (s.tds != null && !dentro(s.tds, pez.d)) {
     lista.push({ txt: `Agua ${s.tds < pez.d[0] ? 'demasiado blanda' : 'demasiado dura'}: pide ${pez.d[0]}–${pez.d[1]} ppm de TDS.`, nivel: 1 })
   }
-  return lista.concat(convivencia(g, s, pez).avisos)
+  return lista
+}
+
+/** Lo que hay que revisar de un pez mío: agua fuera de rango y convivencia. */
+export function problemasPez(g: Guardado, s: Sondas, pez: Pez): Aviso[] {
+  return problemasAgua(s, pez).concat(convivencia(g, s, pez).avisos)
 }
 
 export function nivelPlanta(s: Sondas, pl: Planta): Nivel {

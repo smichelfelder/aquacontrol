@@ -14,8 +14,8 @@ import { Peces } from '@/pantallas/Peces'
 
 export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'acuario'
 
-/** Lo que una pantalla pone en la barra de arriba: otro título, volver y un botón a la derecha (solo tablet). */
-export interface Barra { titulo: string; atras?: () => void; accion?: ReactNode }
+/** Lo que una pantalla pone en la barra de arriba: otro título, volver y, solo en tablet, algo al lado del título y a la derecha. */
+export interface Barra { titulo: string; atras?: () => void; junto?: ReactNode; accion?: ReactNode }
 
 const SECCIONES: { id: Seccion; corto: string; titulo: string; Icono: ComponentType<{ size?: number }> }[] = [
   { id: 'inicio', corto: 'Inicio', titulo: 'Inicio', Icono: IconoInicio },
@@ -47,7 +47,7 @@ export default function App() {
     <div className="flex min-h-dvh flex-col md:flex-row">
       <Secciones actual={seccion} ir={setSeccion} salir={salir} />
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
-        <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} accion={barra?.accion}
+        <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} junto={barra?.junto} accion={barra?.accion}
           inicio={seccion === 'inicio'} conectado={central.conectado} salir={salir} />
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
           {seccion === 'inicio' ? <Inicio ir={setSeccion} />
@@ -81,8 +81,8 @@ function CerrarSesion({ abierto, cambiar }: { abierto: boolean; cambiar: (abiert
 
 const BOTON_SALIR = 'cursor-pointer items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none'
 
-function Encabezado({ titulo, atras, accion, inicio, conectado, salir }: {
-  titulo: string; atras?: () => void; accion?: ReactNode; inicio: boolean; conectado: boolean; salir?: () => void
+function Encabezado({ titulo, atras, junto, accion, inicio, conectado, salir }: {
+  titulo: string; atras?: () => void; junto?: ReactNode; accion?: ReactNode; inicio: boolean; conectado: boolean; salir?: () => void
 }) {
   const ahora = useAhora()
   return (
@@ -93,9 +93,12 @@ function Encabezado({ titulo, atras, accion, inicio, conectado, salir }: {
           <IconoVolver size={22} />
         </button>
       ) : <span className="md:hidden"><Logo /></span>}
-      <div className="flex min-w-0 grow flex-col">
-        <h1 className="truncate font-heading text-[22px] font-medium md:text-[30px]">{titulo}</h1>
-        {inicio && <div className="hidden text-base text-muted-foreground md:block">{fechaTxt(ahora)}</div>}
+      <div className="flex min-w-0 grow items-center gap-[22px]">
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate font-heading text-[22px] font-medium md:text-[30px]">{titulo}</h1>
+          {inicio && <div className="hidden text-base text-muted-foreground md:block">{fechaTxt(ahora)}</div>}
+        </div>
+        {junto && <div className="hidden min-w-0 md:block">{junto}</div>}
       </div>
       {inicio && (
         <div className="hidden items-center gap-5 md:flex">
@@ -103,7 +106,7 @@ function Encabezado({ titulo, atras, accion, inicio, conectado, salir }: {
           <span className="font-heading text-[52px] leading-none font-medium tracking-[-0.02em]">{horaTxt(ahora)}</span>
         </div>
       )}
-      {accion && <div className="hidden shrink-0 md:block">{accion}</div>}
+      {accion && <div className="hidden shrink-0 items-center gap-2.5 md:flex">{accion}</div>}
       {/* En el móvil no hay menú lateral: cerrar sesión va arriba a la derecha */}
       {salir && (
         <button type="button" onClick={salir} aria-label="Cerrar sesión" className={cn(BOTON_SALIR, 'flex size-11 shrink-0 md:hidden')}>

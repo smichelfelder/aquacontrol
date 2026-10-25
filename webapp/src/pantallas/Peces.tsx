@@ -1,67 +1,79 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { IconoBuscar, IconoMas } from '@/components/iconos'
 import { Button } from '@/components/ui/button'
-import { PECES, type Pez } from '@/data'
+import { PECES, type Pez, type Rango } from '@/data'
 import { FOTOS, fondoFoto } from '@/data/fotos'
-import { convivencia, fmt, medidas, nivelOcupacion, ocupacion, problemasPez, type Aviso, type Nivel } from '@/lib/acuario'
+import {
+  avisoSexos, conSexos, convivencia, fmt, medidas, nivelOcupacion, ocupacion, problemasAgua, reparto, sexos,
+  type Aviso, type Nivel, type Sexos,
+} from '@/lib/acuario'
 import { useCentral, type Sondas } from '@/lib/central'
 import { useGuardado, type Guardado } from '@/lib/guardado'
-import { useTablet } from '@/lib/use-tablet'
+import { useAncha } from '@/lib/use-ancha'
 import { cn } from '@/lib/utils'
 import type { Barra } from '@/App'
 
-// En el móvil se ve una por vez. En tablet la lista va con la ficha al lado (detalle = lista)
-// y el buscador con la especie elegida (candidato = agregar).
+// Como la pantalla de 7" del diseño («mis peces y agregar especie»). En pantalla ancha la lista va
+// con la ficha al lado y el buscador con la especie elegida; más angosta se ve una cosa por vez.
 type Vista = 'lista' | 'detalle' | 'agregar' | 'candidato'
 
-const PANEL = 'rounded-[20px] border border-border bg-panel md:rounded-[22px]'
-const TITULO = 'text-[13px] font-semibold tracking-[0.1em] md:text-sm'
-const COLUMNAS = 'md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:items-start md:gap-5 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)]'
+const PANEL = 'rounded-[22px] border border-border bg-panel backdrop-blur-[8px]'
+// En pantalla ancha todo entra en el alto de la pantalla y cada panel tiene su propio scroll
+const ALTO = 'lg:h-[calc(100dvh-118px)] lg:min-h-[520px]'
+const SCROLL = 'lg:min-h-0 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+const ETIQUETA = 'text-sm tracking-[0.08em] text-tenue'
 const TEXTO = ['text-primary', 'text-aviso', 'text-alerta']
-const PUNTO = ['bg-primary', 'bg-aviso', 'bg-alerta']
-const BORDE = ['border-primary', 'border-aviso', 'border-alerta']
+const FONDO = ['bg-primary', 'bg-aviso', 'bg-alerta']
 const VEREDICTO = ['Compatible', 'Con cuidado', 'No recomendada']
 const SELLO = ['bg-primary/16 text-secondary-foreground', 'bg-aviso text-[#2a1606]', 'bg-alerta text-[#2b0c0c]']
+const SEXOS = [['m', 'Machos'], ['h', 'Hembras'], ['s', 'Sin sexar']] as const
 
-// La biblioteca por nombre; se busca sin tildes («neon» encuentra «Neón»)
 const BIBLIOTECA = Object.values(PECES).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 const sinTildes = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
-
-const tallaTxt = (p: Pez) => fmt(p.talla, 1).replace(',0', '')
 const peor = (l: Aviso[]): Nivel => l.reduce<Nivel>((n, a) => (a.nivel > n ? a.nivel : n), 0)
-const ejemplares = (n: number) => n + (n === 1 ? ' ejemplar' : ' ejemplares')
+const tallaTxt = (p: Pez) => fmt(p.talla, 1).replace(',0', '')
 
 export function Peces({ barra }: { barra: (b: Barra | null) => void }) {
   const [g, cambiar] = useGuardado()
   const s = useCentral().sondas
-  const tablet = useTablet()
+  const ancha = useAncha()
   const [vista, setVista] = useState<Vista>('lista')
   const [aviso, setAviso] = useState('')
   const [q, setQ] = useState('')
-  const [elegido, setElegido] = useState({ id: 'oto', cant: PECES.oto?.min ?? 1 })
+  const [cand, setCand] = useState(() => ({ id: 'oto', ...reparto('oto', PECES.oto?.min ?? 1) }))
 
   const mios = g.peces.filter((p) => PECES[p.id])
   const sel = mios.find((p) => p.id === g.sel) ?? mios[0]
-  const cand = PECES[elegido.id] ?? BIBLIOTECA[0]
+  const pezCand = PECES[cand.id] ?? BIBLIOTECA[0]
   let v = vista
-  if (tablet && vista === 'detalle') v = 'lista'
-  if (tablet && vista === 'candidato') v = 'agregar'
+  if (ancha && vista === 'detalle') v = 'lista'
+  if (ancha && vista === 'candidato') v = 'agregar'
   if (v === 'detalle' && !sel) v = 'lista'
 
   const irAgregar = () => { setVista('agregar'); setAviso('') }
-  const titulo = v === 'detalle' ? PECES[sel!.id].nombre : v === 'agregar' ? 'Agregar especie' : v === 'candidato' ? cand.nombre : ''
+  const titulo = v === 'lista' ? 'Mis peces' : v === 'agregar' ? 'Agregar especie' : v === 'detalle' ? PECES[sel!.id].nombre : pezCand.nombre
+  const ahora = `Ahora: ${fmt(s.temp, 1)} °C · pH ${fmt(s.ph, 1)} · ${s.tds == null ? '—' : Math.round(s.tds)} ppm`
   useEffect(() => {
-    barra(v === 'lista'
-      ? { titulo: 'Mis peces', accion: <BotonAgregar onClick={irAgregar} className="h-[52px] rounded-2xl" /> }
-      : { titulo, atras: () => setVista(v === 'candidato' ? 'agregar' : 'lista') })
-  }, [v, titulo, barra])
+    const junto = <Ahora txt={ahora} />
+    if (v === 'lista') {
+      barra({ titulo, junto, accion: <>{aviso && <Hecho txt={aviso} />}<BotonAgregar onClick={irAgregar} /></> })
+    } else if (ancha) {
+      barra({ titulo, junto, accion: <BotonMisPeces onClick={() => setVista('lista')} /> })
+    } else {
+      barra({ titulo, junto, atras: () => setVista(v === 'candidato' ? 'agregar' : 'lista') })
+    }
+  }, [v, ancha, titulo, ahora, aviso, barra])
   useEffect(() => () => barra(null), [barra])
-  // Cada vista del móvil arranca desde arriba
+  // Cada vista arranca desde arriba
   useEffect(() => { window.scrollTo(0, 0) }, [v])
 
-  const cambiarCant = (id: string, delta: number) => {
-    const peces = g.peces.map((p) => (p.id === id ? { ...p, cant: p.cant + delta } : p)).filter((p) => p.cant > 0)
-    const sigue = peces.some((p) => p.id === id)
+  const cambiarSexo = (id: string, k: keyof Sexos, delta: number) => {
+    const actual = g.peces.find((p) => p.id === id)
+    if (!actual) return
+    const x = sexos(actual)
+    x[k] = Math.max(0, x[k] + delta)
+    const sigue = x.m + x.h + x.s > 0
+    const peces = sigue ? g.peces.map((p) => (p.id === id ? conSexos(id, x) : p)) : g.peces.filter((p) => p.id !== id)
     cambiar({ peces, sel: sigue ? id : peces[0]?.id })
     if (!sigue) setVista('lista')
     setAviso('')
@@ -69,196 +81,274 @@ export function Peces({ barra }: { barra: (b: Barra | null) => void }) {
   const abrir = (id: string) => {
     cambiar({ sel: id })
     setAviso('')
-    if (!tablet) setVista('detalle')
+    if (!ancha) setVista('detalle')
   }
   const elegir = (id: string) => {
-    setElegido({ id, cant: PECES[id].min })
-    if (!tablet) setVista('candidato')
+    setCand({ id, ...reparto(id, PECES[id].min) })
+    if (!ancha) setVista('candidato')
   }
   const agregar = () => {
-    const ya = g.peces.some((p) => p.id === cand.id)
+    const n = cand.m + cand.h + cand.s
+    if (!n) return
+    const ya = g.peces.find((p) => p.id === pezCand.id)
+    const suma = (x: Sexos): Sexos => ({ m: x.m + cand.m, h: x.h + cand.h, s: x.s + cand.s })
     const peces = ya
-      ? g.peces.map((p) => (p.id === cand.id ? { ...p, cant: p.cant + elegido.cant } : p))
-      : [...g.peces, { id: cand.id, cant: elegido.cant }]
-    cambiar({ peces, sel: cand.id })
+      ? g.peces.map((p) => (p.id === pezCand.id ? conSexos(p.id, suma(sexos(p))) : p))
+      : [...g.peces, conSexos(pezCand.id, cand)]
+    cambiar({ peces, sel: pezCand.id })
     setQ('')
-    setAviso(`Agregado: ${elegido.cant} × ${cand.nombre}`)
+    setAviso(`Agregado: ${n} × ${pezCand.nombre}`)
     setVista('lista')
   }
 
   if (v === 'agregar' || v === 'candidato') {
     return (
-      <div className={cn('flex flex-col gap-3', COLUMNAS)}>
-        {v === 'agregar' && <Buscador g={g} s={s} q={q} setQ={setQ} marcado={tablet ? cand.id : undefined} elegir={elegir} />}
-        {(tablet || v === 'candidato') && (
-          <Candidato g={g} s={s} pez={cand} cant={elegido.cant} agregar={agregar}
-            setCant={(cant) => setElegido({ ...elegido, cant: Math.min(99, Math.max(1, cant)) })} />
+      <div className={cn('flex flex-col gap-4 lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]', ALTO)}>
+        {v === 'agregar' && <Buscador g={g} s={s} q={q} setQ={setQ} marcado={ancha ? pezCand.id : undefined} elegir={elegir} />}
+        {(ancha || v === 'candidato') && (
+          <Candidato g={g} s={s} pez={pezCand} n={cand} agregar={agregar}
+            cambiar={(k, d) => setCand({ ...cand, [k]: Math.min(99, Math.max(0, cand[k] + d)) })} />
         )}
       </div>
     )
   }
 
   return (
-    <div className={cn('flex flex-col gap-3', mios.length > 0 && COLUMNAS)}>
+    <div className={cn('flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_380px]', ALTO)}>
       {v === 'lista' && (
-        <div className="flex flex-col gap-3 pb-16 md:pb-0">
-          {aviso && (
-            <div role="status" className="rounded-[14px] border border-primary/40 bg-primary/16 px-3.5 py-3 text-[15px] md:px-4 md:text-base">{aviso}</div>
-          )}
-          <Ocupacion g={g} />
-          {mios.map((p) => (
-            <Fila key={p.id} pez={PECES[p.id]} cant={p.cant} problemas={problemasPez(g, s, PECES[p.id])}
-              marcado={tablet && p.id === sel?.id} onClick={() => abrir(p.id)} />
-          ))}
-          {!mios.length && (
-            <div className={cn(PANEL, 'flex flex-col items-center gap-1.5 px-4 py-7 text-center')}>
-              <span className="font-heading text-xl md:text-[22px]">Todavía no hay peces</span>
-              <span className="text-[15px] text-muted-foreground md:text-base">Tocá «Agregar especie» y elegí los que tenés.</span>
-            </div>
-          )}
+        <div className="flex flex-col gap-3 pb-16 md:pb-0 lg:min-h-0">
+          <div className="flex flex-col items-start gap-2 md:hidden">
+            <Ahora txt={ahora} />
+            {aviso && <Hecho txt={aviso} />}
+          </div>
+          <MisPeces g={g} s={s} marcado={ancha ? sel?.id : undefined} abrir={abrir} />
           <BotonAgregar onClick={irAgregar}
             className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-10 h-14 rounded-2xl shadow-[0_6px_18px_rgb(0_0_0/0.35)] md:hidden" />
         </div>
       )}
-      {sel && (tablet || v === 'detalle') && (
-        <Ficha g={g} s={s} pez={PECES[sel.id]} cant={sel.cant} menos={() => cambiarCant(sel.id, -1)} mas={() => cambiarCant(sel.id, 1)} />
+      {(ancha || v === 'detalle') && (
+        sel ? <Ficha g={g} s={s} pez={PECES[sel.id]} x={sexos(sel)} cambiar={(k, d) => cambiarSexo(sel.id, k, d)} />
+          : <SinEspecies />
       )}
     </div>
+  )
+}
+
+/* ---------- Barra de arriba ---------- */
+
+function Ahora({ txt }: { txt: string }) {
+  return (
+    <span className="ml-1.5 block truncate rounded-full border border-border bg-[rgb(9_24_26/0.66)] px-3.5 py-1.5 text-[15px] whitespace-nowrap text-[#cfe3de] max-md:ml-0 md:text-base">
+      {txt}
+    </span>
+  )
+}
+
+function Hecho({ txt }: { txt: string }) {
+  return (
+    <span role="status" className="flex min-h-11 items-center gap-2 rounded-full bg-primary/16 px-4 text-base whitespace-nowrap text-secondary-foreground">
+      <Trazo d="M5 12l5 5L20 7" size={18} /> {txt}
+    </span>
   )
 }
 
 function BotonAgregar({ onClick, className }: { onClick: () => void; className?: string }) {
   return (
-    <Button onClick={onClick} className={cn('gap-2 pr-5 pl-4 text-base font-semibold [&_svg]:size-[22px]', className)}>
+    <Button onClick={onClick} className={cn('h-11 gap-2 rounded-full px-5 text-[17px] font-semibold [&_svg]:size-[18px]', className)}>
       <IconoMas /> Agregar especie
     </Button>
   )
 }
 
-function Foto({ id, alt = '', className }: { id: string; alt?: string; className: string }) {
-  if (!FOTOS[id]) return <span aria-hidden="true" className={cn('block shrink-0 bg-muted', className)} />
+function BotonMisPeces({ onClick }: { onClick: () => void }) {
   return (
-    <img src={FOTOS[id]} alt={alt} loading="lazy" decoding="async" style={{ background: fondoFoto(id) }}
-      className={cn('block shrink-0 object-contain', className)} />
-  )
-}
-
-function Contador({ n, menos, mas, nombre, className }: { n: number; menos: () => void; mas: () => void; nombre: string; className?: string }) {
-  const boton = cn('shrink-0 rounded-full border-[rgb(170_225_212/0.3)] bg-transparent p-0 text-[22px] font-normal', className)
-  return (
-    <span className="flex items-center gap-2.5 md:gap-3">
-      <Button variant="outline" onClick={menos} aria-label={`Uno menos de ${nombre}`} className={boton}>−</Button>
-      <span aria-live="polite" className="min-w-8 text-center font-heading text-[22px] tabular-nums md:min-w-[34px] md:text-[26px]">{n}</span>
-      <Button variant="outline" onClick={mas} aria-label={`Uno más de ${nombre}`} className={boton}>+</Button>
-    </span>
+    <Button variant="ghost" onClick={onClick}
+      className="h-11 gap-2 rounded-full border border-input bg-[rgb(9_24_26/0.66)] px-5 text-[17px] font-normal [&_svg]:size-[18px]">
+      <Trazo d="M15 6l-6 6 6 6" /> Mis peces
+    </Button>
   )
 }
 
 /* ---------- Mis peces ---------- */
 
-function Ocupacion({ g }: { g: Guardado }) {
+function MisPeces({ g, s, marcado, abrir }: { g: Guardado; s: Sondas; marcado?: string; abrir: (id: string) => void }) {
   const oc = ocupacion(g)
+  const mios = g.peces.filter((p) => PECES[p.id])
   return (
-    <section aria-label="Ocupación del acuario" className="flex flex-col gap-2 rounded-[18px] border border-border bg-panel px-4 py-3.5 md:px-[18px]">
-      <div className="flex items-baseline justify-between">
-        <span className="text-sm text-muted-foreground md:text-[15px]">Ocupación del acuario</span>
-        <span className={cn('font-heading text-2xl font-medium md:text-[26px]', TEXTO[oc.nivel])}>{oc.pct} %</span>
+    <section aria-label="Mis peces" className={cn(PANEL, 'flex flex-col gap-1.5 px-3 py-3 md:px-[18px] md:py-3.5 lg:min-h-0 lg:grow')}>
+      <div className="flex flex-col gap-2 px-1 pt-1.5 pb-3 sm:flex-row sm:items-center sm:gap-[18px] sm:px-3">
+        <div className="flex items-baseline justify-between gap-0.5 sm:min-w-[150px] sm:flex-col sm:items-start">
+          <span className="text-[13px] tracking-[0.08em] text-tenue">OCUPACIÓN</span>
+          <span className={cn('font-heading text-[28px] font-medium', TEXTO[oc.nivel])}>{oc.pct} %</span>
+        </div>
+        <div className="flex grow flex-col gap-2">
+          <div className="relative h-3 rounded-full bg-[rgb(170_225_212/0.14)]" role="presentation">
+            <div className={cn('absolute inset-y-0 left-0 rounded-full transition-[width]', FONDO[oc.nivel])} style={{ width: Math.min(100, oc.pct) + '%' }} />
+            <div className="absolute -top-1 left-[80%] h-5 w-0.5 bg-[#cfe3de]" />
+          </div>
+          <div className="flex flex-wrap justify-between gap-x-3 text-sm text-muted-foreground">
+            <span>{Math.round(oc.usados)} cm de peces adultos en {Math.round(oc.neto)} L netos</span>
+            <span>Límite cómodo 80 %</span>
+          </div>
+        </div>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-[rgb(170_225_212/0.14)]" role="presentation">
-        <div className={cn('h-full rounded-full transition-[width]', PUNTO[oc.nivel])} style={{ width: Math.min(100, oc.pct) + '%' }} />
+
+      <div className={cn('flex grow flex-col gap-1.5 border-t border-[rgb(170_225_212/0.12)] pt-2', SCROLL)}>
+        {mios.map((p) => <Fila key={p.id} pez={PECES[p.id]} x={sexos(p)} s={s} marcado={p.id === marcado} onClick={() => abrir(p.id)} />)}
+        {!mios.length && (
+          <div className="flex flex-col items-center gap-1.5 px-4 py-7 text-center">
+            <span className="font-heading text-xl">Todavía no hay peces</span>
+            <span className="text-[15px] text-muted-foreground">Tocá «Agregar especie» y elegí los que tenés.</span>
+          </div>
+        )}
       </div>
-      <div className="text-[13px] text-tenue">
-        {Math.round(oc.usados)} cm de peces adultos en {Math.round(oc.neto)} L · cómodo hasta 80 %
+
+      <div className="flex flex-wrap items-center gap-x-[18px] gap-y-1 px-1 pt-1.5 text-sm text-tenue sm:px-3">
+        <span className="flex items-center gap-2"><span className="inline-block h-4 w-[3px] rounded-sm bg-[#f7fbfa]" />Valor actual de la sonda</span>
+        <span className="flex items-center gap-2"><span className="inline-block h-2 w-[22px] rounded-full bg-primary" />Rango ideal, dentro</span>
+        <span className="flex items-center gap-2"><span className="inline-block h-2 w-[22px] rounded-full bg-aviso" />Rango ideal, fuera</span>
       </div>
     </section>
   )
 }
 
-function Fila({ pez, cant, problemas, marcado, onClick }: {
-  pez: Pez; cant: number; problemas: Aviso[]; marcado: boolean; onClick: () => void
-}) {
-  const ok = problemas.length === 0
+function Fila({ pez, x, s, marcado, onClick }: { pez: Pez; x: Sexos; s: Sondas; marcado: boolean; onClick: () => void }) {
+  const revisar = problemasAgua(s, pez).length > 0
   return (
     <button type="button" onClick={onClick} aria-current={marcado || undefined}
-      className={cn('flex cursor-pointer items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition-colors',
+      className={cn('grid shrink-0 cursor-pointer grid-cols-[62px_minmax(0,1fr)] items-center gap-x-3.5 rounded-[14px] border px-3 py-2.5 text-left transition-colors',
         'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
-        marcado ? 'border-[rgb(170_225_212/0.4)] bg-accent' : 'border-[rgb(170_225_212/0.12)] bg-[rgb(9_24_26/0.6)] hover:bg-[rgb(14_34_36/0.8)]')}>
-      <Foto id={pez.id} className="h-[54px] w-[72px] rounded-xl md:h-[57px] md:w-[76px]" />
-      <span className="flex min-w-0 grow flex-col gap-0.5">
-        <span className="font-heading text-[17px] font-medium md:text-lg">{pez.nombre}</span>
-        <span className="text-[13px] text-muted-foreground md:text-sm">{ejemplares(cant)}</span>
-        <span className="text-xs text-[#7f9893]">{pez.t[0]}–{pez.t[1]} °C · pH {fmt(pez.p[0], 1)}–{fmt(pez.p[1], 1)}</span>
-      </span>
-      <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[13px] font-semibold md:px-3 md:text-sm', ok ? SELLO[0] : SELLO[1])}>
-        {ok ? 'Bien' : 'Revisar'}
+        marcado ? 'border-[rgb(170_225_212/0.35)] bg-accent' : 'border-transparent hover:bg-[rgb(170_225_212/0.05)]')}>
+      <Foto id={pez.id} className="h-[52px] w-[62px] rounded-xl" />
+      <span className="flex min-w-0 flex-col gap-2">
+        <span className="flex min-w-0 items-center gap-3 sm:gap-3.5">
+          <span className="min-w-0 grow truncate font-heading text-lg font-medium sm:text-xl">{pez.nombre}</span>
+          <ContadorSexos x={x} />
+          {revisar && (
+            <span role="img" aria-label="Revisar: hay parámetros fuera de rango"
+              className="flex size-[30px] shrink-0 items-center justify-center rounded-full border border-aviso bg-aviso/18 text-aviso">
+              <Alerta size={16} />
+            </span>
+          )}
+        </span>
+        <span className="grid grid-cols-3 gap-3 sm:gap-[22px]">
+          <Barrita nombre="TEMP." r={pez.t} lo={18} hi={30} v={s.temp} txt={`${pez.t[0]}–${pez.t[1]} °C`} />
+          <Barrita nombre="PH" r={pez.p} lo={5.5} hi={8.5} v={s.ph} txt={`${fmt(pez.p[0], 1)}–${fmt(pez.p[1], 1)}`} />
+          <Barrita nombre="TDS" r={pez.d} lo={0} hi={500} v={s.tds} txt={`${pez.d[0]}–${pez.d[1]} ppm`} />
+        </span>
       </span>
     </button>
   )
 }
 
-function Dato({ titulo, children, className }: { titulo: string; children: ReactNode; className?: string }) {
+const SEXO_ICONO = {
+  m: { color: '#8cc6f0', d: <><circle cx="10" cy="14" r="6" /><path d="M14.5 9.5L20 4M15 4h5v5" /></>, uno: 'macho', varios: 'machos' },
+  h: { color: '#f2a6c9', d: <><circle cx="12" cy="9" r="6" /><path d="M12 15v7M8.5 19h7" /></>, uno: 'hembra', varios: 'hembras' },
+  s: { color: '#a7c0bb', d: <><circle cx="12" cy="12" r="8" /><path d="M9.8 9.6a2.3 2.3 0 0 1 4.4 1c0 1.6-2.2 1.9-2.2 3.2M12 17v.3" /></>, uno: 'sin sexar', varios: 'sin sexar' },
+}
+
+function ContadorSexos({ x }: { x: Sexos }) {
+  return (['m', 'h', 's'] as const).filter((k) => x[k] > 0).map((k) => {
+    const i = SEXO_ICONO[k]
+    return (
+      <span key={k} role="img" aria-label={`${x[k]} ${x[k] === 1 ? i.uno : i.varios}`} className="flex shrink-0 items-center gap-1 font-heading text-base sm:text-lg">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={i.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{i.d}</svg>
+        <span>{x[k]}</span>
+      </span>
+    )
+  })
+}
+
+/** El rango que pide el pez sobre una escala fija, con la marca del valor actual de la sonda. */
+function Barrita({ nombre, r, lo, hi, v, txt }: { nombre: string; r: Rango; lo: number; hi: number; v: number | null; txt: string }) {
+  const pct = (x: number) => Math.max(0, Math.min(100, ((x - lo) / (hi - lo)) * 100))
+  const ok = v == null || (v >= r[0] && v <= r[1])
   return (
-    <div className={cn('rounded-[14px] bg-[rgb(9_24_26/0.6)] px-3 py-2.5 md:bg-[rgb(170_225_212/0.06)]', className)}>
-      <div className="text-xs text-tenue">{titulo}</div>
-      <div className="text-[15px]">{children}</div>
-    </div>
+    <span className="flex min-w-0 flex-col gap-1.5">
+      <span className="flex flex-wrap justify-between gap-x-1.5 text-[13px]">
+        <span className="tracking-[0.06em] text-tenue">{nombre}</span>
+        <span className="text-[#cfe3de]">{txt}</span>
+      </span>
+      <span className="relative mt-auto block h-2 rounded-full bg-[rgb(170_225_212/0.14)]">
+        <span className={cn('absolute inset-y-0 block rounded-full', ok ? 'bg-primary' : 'bg-aviso')}
+          style={{ left: pct(r[0]) + '%', width: pct(r[1]) - pct(r[0]) + '%' }} />
+        {v != null && <span className="absolute -top-[5px] -ml-px block h-[18px] w-[3px] rounded-sm bg-[#f7fbfa]" style={{ left: pct(v) + '%' }} />}
+      </span>
+    </span>
   )
 }
 
-function Ficha({ g, s, pez, cant, menos, mas }: {
-  g: Guardado; s: Sondas; pez: Pez; cant: number; menos: () => void; mas: () => void
+/* ---------- Ficha de una especie mía ---------- */
+
+function Ficha({ g, s, pez, x, cambiar }: {
+  g: Guardado; s: Sondas; pez: Pez; x: Sexos; cambiar: (k: keyof Sexos, delta: number) => void
 }) {
   const m = medidas(g)
   const oc = ocupacion(g)
   const entran = Math.floor(Math.max(0, oc.neto * 0.8 - oc.usados) / pez.talla)
   const cabe = m.neto >= pez.minL && m.largo >= pez.minLargo
-  const problemas = problemasPez(g, s, pez)
+  const sexo = avisoSexos(pez.id, x.m, x.h)
+  const problemas = [...problemasAgua(s, pez), ...(sexo && sexo.nivel > 0 ? [sexo] : []), ...convivencia(g, s, pez).avisos]
   const nivel = peor(problemas)
 
   return (
-    <section aria-label={'Ficha de ' + pez.nombre}
-      className="flex flex-col gap-3 md:sticky md:top-4 md:gap-3.5 md:rounded-[22px] md:border md:border-border md:bg-panel md:px-[22px] md:py-[18px]">
-      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start xl:gap-5">
-        <Foto id={pez.id} alt={'Foto de ' + pez.nombre} className="h-[210px] w-full rounded-[20px] md:rounded-[18px]" />
-        <div className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-heading text-2xl font-medium md:text-[28px]">{pez.nombre}</h2>
-            <div className="text-sm text-tenue italic md:text-[15px]">{pez.cientifico}</div>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl border border-border bg-panel py-2.5 pr-2.5 pl-3.5 md:justify-start md:gap-3 md:border-0 md:bg-transparent md:p-0">
-            <span className="text-[15px] text-muted-foreground md:text-base">Tenés</span>
-            <Contador n={cant} menos={menos} mas={mas} nombre={pez.nombre} className="size-11 md:size-[46px]" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Dato titulo="Zona">{pez.zona}</Dato>
-            <Dato titulo="Grupo">{pez.grupo}</Dato>
-            <Dato titulo="Talla adulta">{tallaTxt(pez)} cm</Dato>
-            <Dato titulo="Caben"><span className={entran > 0 ? '' : 'text-aviso'}>{entran > 0 ? `hasta ${entran} más` : 'ninguno más'}</span></Dato>
-            <Dato titulo="Acuario mínimo" className="col-span-2">
-              {pez.minL} L y {pez.minLargo} cm <span className={cabe ? 'text-primary' : 'text-aviso'}>{cabe ? '✓' : '(acuario chico)'}</span>
-            </Dato>
-          </div>
-        </div>
+    <section aria-label={'Ficha de ' + pez.nombre} className={cn(PANEL, 'flex flex-col gap-2.5 px-[18px] py-4 md:px-[22px] md:py-[18px]', SCROLL)}>
+      <Foto id={pez.id} alt={'Foto de ' + pez.nombre} className="h-40 w-full rounded-[14px]" vacia="h-16 w-full" />
+      <div className="flex flex-col gap-0.5">
+        <h2 className="font-heading text-2xl font-medium">{pez.nombre}</h2>
+        <span className="text-sm text-tenue italic">{pez.cientifico}</span>
       </div>
-      <p className="text-[15px] leading-normal text-[#cfe3de] md:text-base">{pez.nota}</p>
-      <div className={cn('flex flex-col gap-2 rounded-2xl border bg-[rgb(9_24_26/0.6)] px-3.5 py-3 md:bg-transparent md:px-4 md:py-3.5', BORDE[nivel])}>
-        <h3 className={cn(TITULO, TEXTO[nivel])}>QUÉ REVISAR</h3>
-        <Avisos lista={problemas.length ? problemas : [{ txt: 'Todo en orden para esta especie.', nivel: 0 }]} />
+      <dl className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-[7px] text-[15px]">
+        <dt className="text-tenue">Zona</dt><dd>{pez.zona}</dd>
+        <dt className="text-tenue">Grupo</dt><dd>{pez.grupo}</dd>
+        <dt className="text-tenue">Tenés</dt><dd>{x.m + x.h + x.s} de {tallaTxt(pez)} cm</dd>
+        {SEXOS.map(([k, nombre]) => (
+          <Paso key={k} nombre={nombre} n={x[k]} menos={() => cambiar(k, -1)} mas={() => cambiar(k, 1)} />
+        ))}
+        <dt className="text-tenue">Mínimo</dt>
+        <dd>{pez.minL} L y {pez.minLargo} cm de largo {cabe ? '✓' : '(acuario chico)'}</dd>
+        <dt className="text-tenue">Caben</dt>
+        <dd className={entran > 0 ? '' : 'text-aviso'}>{entran > 0 ? `hasta ${entran} más` : 'ninguno más'}</dd>
+      </dl>
+      <p className="text-sm leading-[1.45] text-[#cfe3de]">{pez.nota}</p>
+      <div className="flex flex-col gap-2 border-t border-[rgb(170_225_212/0.14)] pt-3">
+        <h3 className={cn('flex items-center gap-2 text-sm font-semibold tracking-[0.1em]', TEXTO[nivel])}>
+          <Alerta size={16} /> QUÉ REVISAR
+        </h3>
+        <Avisos lista={problemas.length ? problemas : [{ txt: 'Todo en orden para esta especie.', nivel: 0 }]} chico />
       </div>
     </section>
   )
 }
 
-function Avisos({ lista }: { lista: Aviso[] }) {
+function SinEspecies() {
   return (
-    <ul className="flex flex-col gap-2">
-      {lista.map((a) => (
-        <li key={a.txt} className="flex gap-2 text-sm leading-[1.4] md:gap-2.5 md:text-[15px] md:leading-[1.45]">
-          <span aria-hidden="true" className={cn('mt-1.5 size-2 shrink-0 rounded-full md:mt-[7px]', PUNTO[a.nivel])} />
-          <span>{a.txt}</span>
-        </li>
-      ))}
-    </ul>
+    <section className={cn(PANEL, 'flex flex-col gap-2.5 px-[22px] py-[18px]')}>
+      <div className="flex h-16 items-center justify-center rounded-[14px] border border-dashed border-[rgb(170_225_212/0.3)] text-sm text-tenue">Sin foto todavía</div>
+      <h2 className="font-heading text-2xl font-medium">Sin especies</h2>
+      <p className="text-sm leading-[1.45] text-[#cfe3de]">Agregá tu primera especie.</p>
+    </section>
+  )
+}
+
+/** Machos, hembras o sin sexar en la ficha: va como fila de la lista de datos. */
+function Paso({ nombre, n, menos, mas }: { nombre: string; n: number; menos: () => void; mas: () => void }) {
+  return (
+    <>
+      <dt className="text-tenue">{nombre}</dt>
+      <dd className="flex items-center gap-2.5">
+        <Mas onClick={menos} label={`${nombre}: uno menos`}>−</Mas>
+        <span aria-live="polite" className="min-w-7 text-center font-heading text-xl tabular-nums">{n}</span>
+        <Mas onClick={mas} label={`${nombre}: uno más`}>+</Mas>
+      </dd>
+    </>
+  )
+}
+
+function Mas({ onClick, label, children }: { onClick: () => void; label: string; children: ReactNode }) {
+  return (
+    <Button variant="outline" onClick={onClick} aria-label={label}
+      className="size-11 rounded-xl border-[rgb(170_225_212/0.3)] bg-transparent p-0 text-[22px] font-normal">{children}</Button>
   )
 }
 
@@ -270,117 +360,166 @@ function Buscador({ g, s, q, setQ, marcado, elegir }: {
   const busca = sinTildes(q.trim())
   const lista = BIBLIOTECA.filter((p) => !busca || sinTildes(p.nombre + ' ' + p.cientifico).includes(busca))
   return (
-    <div className="flex flex-col gap-2.5">
-      <label htmlFor="buscar-pez"
-        className="flex min-h-[52px] items-center gap-2.5 rounded-full border border-input bg-accent px-4 focus-within:ring-3 focus-within:ring-ring/50 md:min-h-[54px] md:px-[18px]">
+    <section aria-label="Biblioteca de especies" className={cn(PANEL, 'flex flex-col gap-3 p-4 md:p-[18px] lg:min-h-0')}>
+      <label htmlFor="buscar-pez" className={ETIQUETA}>BUSCAR EN LA BIBLIOTECA</label>
+      <div className="flex min-h-[52px] items-center gap-2.5 rounded-[14px] border border-input bg-muted px-4 focus-within:ring-3 focus-within:ring-ring/50">
         <IconoBuscar size={20} className="shrink-0 text-muted-foreground" />
-        <span className="sr-only">Buscar especie</span>
-        <input id="buscar-pez" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar especie" autoComplete="off"
-          className="min-w-0 grow bg-transparent text-base outline-none placeholder:text-[#7f9893] md:text-[17px]" />
-      </label>
-      <div aria-live="polite" className="text-[13px] text-tenue md:text-sm">{lista.length} de {BIBLIOTECA.length} especies</div>
-      <div className="flex flex-col gap-1">
+        <input id="buscar-pez" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Otocinclus, gamba, betta…" autoComplete="off"
+          className="min-w-0 grow bg-transparent text-[19px] outline-none placeholder:text-[#7f9893]" />
+      </div>
+      <div className={cn('flex grow flex-col gap-1', SCROLL)}>
         {lista.map((p) => {
           const nivel = convivencia(g, s, p).nivel
           const tengo = g.peces.find((x) => x.id === p.id)
           const on = p.id === marcado
           return (
             <button key={p.id} type="button" onClick={() => elegir(p.id)} aria-current={on || undefined}
-              className={cn('flex cursor-pointer items-center gap-3 rounded-[14px] border px-2.5 py-2 text-left transition-colors md:py-1.5',
+              className={cn('relative flex min-h-[60px] shrink-0 cursor-pointer items-center justify-between gap-2.5 rounded-xl border px-3.5 py-2 text-left transition-colors',
                 'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
-                on ? 'border-[rgb(170_225_212/0.35)] bg-accent' : 'border-transparent bg-[rgb(9_24_26/0.5)] hover:bg-accent md:bg-transparent')}>
-              <Foto id={p.id} className="h-[42px] w-14 rounded-[10px]" />
-              <span className="flex min-w-0 grow flex-col">
-                <span className="text-base font-semibold">{p.nombre}</span>
-                <span className="truncate text-[13px] text-tenue">{tengo ? 'Ya tenés ' + tengo.cant : p.cientifico}</span>
+                on ? 'border-[rgb(170_225_212/0.35)] bg-accent' : 'border-transparent hover:bg-[rgb(170_225_212/0.05)]')}>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-heading text-lg font-medium">{p.nombre}</span>
+                <span className="text-sm text-tenue">{tengo ? 'Ya tenés ' + tengo.cant : p.cientifico}</span>
               </span>
-              <span className={cn('size-3 shrink-0 rounded-full', PUNTO[nivel])} />
+              <span className={cn('size-3 shrink-0 rounded-full', FONDO[nivel])} />
               <span className="sr-only">{VEREDICTO[nivel]}</span>
             </button>
           )
         })}
-        {!lista.length && <div className="px-0 py-3 text-[15px] text-muted-foreground md:px-3">No hay especies con ese nombre.</div>}
+        {!lista.length && <div className="p-3.5 text-[15px] text-[#cfe3de]">No está en la biblioteca.</div>}
       </div>
-    </div>
+      <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-tenue">
+        {VEREDICTO.map((txt, i) => (
+          <span key={txt} className="flex items-center gap-1.5"><span className={cn('inline-block size-2.5 rounded-full', FONDO[i])} />{txt}</span>
+        ))}
+      </div>
+    </section>
   )
 }
 
-function Candidato({ g, s, pez, cant, setCant, agregar }: {
-  g: Guardado; s: Sondas; pez: Pez; cant: number; setCant: (n: number) => void; agregar: () => void
+function Candidato({ g, s, pez, n, cambiar, agregar }: {
+  g: Guardado; s: Sondas; pez: Pez; n: Sexos; cambiar: (k: keyof Sexos, delta: number) => void; agregar: () => void
 }) {
   const m = medidas(g)
   const oc = ocupacion(g)
   const conv = convivencia(g, s, pez)
-  const nuevoPct = Math.round(((oc.usados + cant * pez.talla) / oc.neto) * 100)
+  const total = n.m + n.h + n.s
+  const nuevoPct = Math.round(((oc.usados + total * pez.talla) / oc.neto) * 100)
   const chico = m.neto < pez.minL || m.largo < pez.minLargo
   let nivel = conv.nivel
   if (nuevoPct > 100 || chico) nivel = 2
   else if (nuevoPct > 80 && nivel < 1) nivel = 1
   const avisos: Aviso[] = [
-    { txt: `Con ${cant} más, la ocupación pasa de ${oc.pct} % a ${nuevoPct} %.`, nivel: nivelOcupacion(nuevoPct) },
+    { txt: `Con ${total} más, la ocupación pasa de ${oc.pct} % a ${nuevoPct} %.`, nivel: nivelOcupacion(nuevoPct) },
     ...(chico ? [{ txt: `Necesita al menos ${pez.minL} L y ${pez.minLargo} cm de largo.`, nivel: 2 as const }] : []),
     ...(conv.avisos.length ? conv.avisos : [{ txt: 'Convive sin problemas con tus especies.', nivel: 0 as const }]),
   ]
   const ya = g.peces.find((p) => p.id === pez.id)
+  const yaX = ya ? sexos(ya) : { m: 0, h: 0, s: 0 }
+  const sexo = avisoSexos(pez.id, n.m + yaX.m, n.h + yaX.h)
 
   const parametros = [
-    { nombre: 'Temperatura', valor: s.temp, r: pez.t, txt: (v: number) => fmt(v, 1) + ' °C', pide: `${pez.t[0]}–${pez.t[1]} °C`, mal: ['↓ baja', '↑ alta'] },
-    { nombre: 'pH', valor: s.ph, r: pez.p, txt: (v: number) => fmt(v, 1), pide: `${fmt(pez.p[0], 1)}–${fmt(pez.p[1], 1)}`, mal: ['↓ bajo', '↑ alto'] },
-    { nombre: 'TDS', valor: s.tds, r: pez.d, txt: (v: number) => Math.round(v) + ' ppm', pide: `${pez.d[0]}–${pez.d[1]} ppm`, mal: ['↓ blanda', '↑ dura'] },
-  ].map((p) => {
-    const ok = p.valor == null || (p.valor >= p.r[0] && p.valor <= p.r[1])
-    return {
-      ...p, actual: p.valor == null ? '—' : p.txt(p.valor),
-      marca: p.valor == null ? '' : ok ? '✓' : p.mal[p.valor < p.r[0] ? 0 : 1],
-      color: ok ? 'text-primary' : 'text-aviso',
-    }
-  })
+    { nombre: 'Temperatura', v: s.temp, r: pez.t, pide: `${pez.t[0]}–${pez.t[1]} °C`, txt: (v: number) => fmt(v, 1) + ' °C' },
+    { nombre: 'pH', v: s.ph, r: pez.p, pide: `${fmt(pez.p[0], 1)}–${fmt(pez.p[1], 1)}`, txt: (v: number) => fmt(v, 1) },
+    { nombre: 'TDS aprox.', v: s.tds, r: pez.d, pide: `${pez.d[0]}–${pez.d[1]} ppm`, txt: (v: number) => Math.round(v) + ' ppm' },
+  ]
 
   return (
-    <section aria-label={pez.nombre}
-      className="flex flex-col gap-3 md:sticky md:top-4 md:gap-3.5 md:rounded-[22px] md:border md:border-border md:bg-panel md:px-[22px] md:py-[18px]">
-      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start xl:gap-5">
-        <Foto id={pez.id} alt={'Foto de ' + pez.nombre} className="h-[190px] w-full rounded-[20px] md:h-[180px] md:rounded-[18px]" />
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-start justify-between gap-2.5 md:flex-col-reverse md:justify-start">
-            <div>
-              <h2 className="font-heading text-[22px] font-medium md:text-[26px]">{pez.nombre}</h2>
-              <div className="text-sm text-tenue italic md:text-[15px]">{pez.cientifico}</div>
-            </div>
-            <span className={cn('shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold md:px-3.5 md:text-sm', SELLO[nivel])}>{VEREDICTO[nivel]}</span>
+    <section aria-label={pez.nombre} className={cn(PANEL, 'flex flex-col gap-4 px-4 py-4 md:px-[26px] md:py-[22px] lg:min-h-0')}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-[18px]">
+          <Foto id={pez.id} alt={'Foto de ' + pez.nombre} className="h-44 w-full rounded-[14px] sm:h-28 sm:w-[150px]" vacia="h-28 w-[150px]" />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h2 className="font-heading text-[26px] font-medium md:text-[30px]">{pez.nombre}</h2>
+            <span className="text-[15px] text-tenue italic">{pez.cientifico} · {pez.zona}</span>
           </div>
-          <p className="hidden text-[15px] leading-[1.45] text-[#cfe3de] md:block">{pez.nota}</p>
+        </div>
+        <span className={cn('self-start rounded-full px-4 py-2 text-base font-semibold whitespace-nowrap', SELLO[nivel])}>{VEREDICTO[nivel]}</span>
+      </div>
+
+      <div className={cn('grid gap-[18px] sm:grid-cols-2 lg:grow lg:grid-cols-1 xl:grid-cols-2', SCROLL)}>
+        <div className="flex flex-col gap-2.5">
+          <h3 className={ETIQUETA}>TU AGUA VS. LO QUE PIDE</h3>
+          {parametros.map((p) => {
+            const ok = p.v == null || (p.v >= p.r[0] && p.v <= p.r[1])
+            return (
+              <div key={p.nombre} className="flex items-center justify-between gap-3 rounded-xl bg-[rgb(170_225_212/0.06)] px-3.5 py-2.5">
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-[15px] text-muted-foreground">{p.nombre}</span>
+                  <span className="font-heading text-[19px]">{p.pide}</span>
+                </span>
+                <span className={cn('flex items-center gap-2 text-base', p.v == null ? 'text-tenue' : ok ? 'text-primary' : 'text-aviso')}>
+                  <span>{p.v == null ? '—' : p.txt(p.v)}</span>
+                  {p.v != null && <span className="font-semibold">{ok ? '✓' : p.v < p.r[0] ? '↓ bajo' : '↑ alto'}</span>}
+                </span>
+              </div>
+            )
+          })}
+          <p className="text-[15px] leading-normal text-[#cfe3de]">{pez.nota}</p>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <h3 className={ETIQUETA}>CONVIVENCIA Y ESPACIO</h3>
+          <Avisos lista={avisos} />
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[rgb(170_225_212/0.14)] bg-[rgb(9_24_26/0.6)] md:grid md:grid-cols-3 md:gap-2.5 md:overflow-visible md:border-0 md:bg-transparent">
-        {parametros.map((p) => (
-          <div key={p.nombre}
-            className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 border-b border-[rgb(170_225_212/0.08)] px-3.5 py-2.5 last:border-b-0 md:flex md:flex-col md:rounded-[14px] md:border-0 md:bg-[rgb(170_225_212/0.06)]">
-            <span className="flex justify-between text-[15px] md:text-sm md:text-muted-foreground">
-              {p.nombre}
-              <span className={cn('hidden font-semibold md:inline', p.color)}>{p.marca}</span>
-            </span>
-            <span className={cn('text-sm font-semibold md:hidden', p.color)}>{p.marca}</span>
-            <span className="col-span-2 text-[13px] text-tenue md:hidden">Pide {p.pide} · agua {p.actual}</span>
-            <span className="hidden text-base md:block">{p.pide}</span>
-            <span className="hidden text-[13px] text-tenue md:block">Agua: {p.actual}</span>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgb(170_225_212/0.14)] pt-3.5">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-end gap-3.5">
+            {SEXOS.map(([k, nombre]) => (
+              <div key={k} role="group" aria-label={nombre} className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">{nombre}</span>
+                <div className="flex items-center gap-1.5">
+                  <Mas onClick={() => cambiar(k, -1)} label={`${nombre}: uno menos`}>−</Mas>
+                  <span aria-live="polite" className="min-w-8 text-center font-heading text-2xl tabular-nums">{n[k]}</span>
+                  <Mas onClick={() => cambiar(k, 1)} label={`${nombre}: uno más`}>+</Mas>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <h3 className={cn(TITULO, 'text-muted-foreground')}>CONVIVENCIA Y ESPACIO</h3>
-        <Avisos lista={avisos} />
-      </div>
-      <p className="text-sm leading-[1.45] text-[#cfe3de] md:hidden">{pez.nota}</p>
-
-      <div className="mt-1 flex flex-wrap items-center gap-2.5 md:gap-3">
-        <Contador n={cant} menos={() => setCant(cant - 1)} mas={() => setCant(cant + 1)} nombre={pez.nombre} className="size-12 md:size-[50px]" />
-        <Button onClick={agregar} className="h-[52px] min-w-0 grow rounded-full px-[30px] text-base font-semibold md:h-[54px] md:grow-0 md:text-[17px]">
-          {ya ? `Sumar ${cant} a los que tenés` : `Agregar ${cant} al acuario`}
+          <span className={cn('text-sm', sexo && sexo.nivel > 0 ? TEXTO[sexo.nivel] : 'text-tenue')}>
+            {sexo ? sexo.txt : 'Recomendado: ' + pez.grupo}
+          </span>
+        </div>
+        <Button onClick={agregar} aria-disabled={!total}
+          className={cn('h-[54px] rounded-[14px] px-6 text-[17px] font-semibold max-sm:w-full',
+            !total && 'bg-[rgb(170_225_212/0.18)] text-tenue hover:bg-[rgb(170_225_212/0.24)]')}>
+          {!total ? 'Elegí cuántos' : ya ? `Sumar ${total}` : `Agregar ${total}`}
         </Button>
       </div>
     </section>
   )
 }
+
+/* ---------- Piezas ---------- */
+
+function Foto({ id, alt = '', className, vacia }: { id: string; alt?: string; className: string; vacia?: string }) {
+  if (!FOTOS[id]) {
+    return vacia
+      ? <div className={cn('flex shrink-0 items-center justify-center rounded-[14px] border border-dashed border-[rgb(170_225_212/0.3)] text-center text-[13px] text-tenue', vacia)}>Sin foto todavía</div>
+      : <span aria-hidden="true" className={cn('block shrink-0 bg-[rgb(170_225_212/0.1)]', className)} />
+  }
+  return (
+    <img src={FOTOS[id]} alt={alt} loading="lazy" decoding="async" style={{ background: fondoFoto(id) }}
+      className={cn('block shrink-0 object-contain', className)} />
+  )
+}
+
+function Avisos({ lista, chico }: { lista: Aviso[]; chico?: boolean }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {lista.map((a) => (
+        <li key={a.txt} className={cn('flex items-start gap-2.5 leading-[1.45]', chico ? 'text-sm' : 'text-[15px]')}>
+          <span aria-hidden="true" className={cn('mt-1.5 shrink-0 rounded-full', chico ? 'size-[9px]' : 'size-2.5', FONDO[a.nivel])} />
+          <span className="text-[#e3eeeb]">{a.txt}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const Trazo = ({ d, size = 18 }: { d: string; size?: number }) => (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+)
+const Alerta = ({ size }: { size: number }) => <Trazo size={size} d="M12 4l9 16H3zM12 10v4M12 17v.5" />
