@@ -1,6 +1,9 @@
 import { useState, type ComponentType } from 'react'
-import { IconoAcuario, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, Logo } from '@/components/iconos'
-import { useCentral } from '@/lib/central'
+import { IconoAcuario, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, IconoSalir, Logo } from '@/components/iconos'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { cerrarSesion, useCentral } from '@/lib/central'
+import { hayCuenta } from '@/lib/cuenta'
 import { fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
 import { cn } from '@/lib/utils'
 import { Abonos } from '@/pantallas/Abonos'
@@ -21,6 +24,7 @@ const SECCIONES: { id: Seccion; corto: string; titulo: string; Icono: ComponentT
 export default function App() {
   const central = useCentral()
   const [seccion, setSeccion] = useState<Seccion>('inicio')
+  const [saliendo, setSaliendo] = useState(false)
   if (central.pide) return <Ingreso pide={central.pide} />
   if (central.cargando) {
     return (
@@ -31,23 +35,46 @@ export default function App() {
   }
 
   const actual = SECCIONES.find((s) => s.id === seccion)!
+  // Cerrar sesión solo tiene sentido con la cuenta (fuera de casa); en demo se ve igual, para probarlo
+  const salir = (hayCuenta && central.modo === 'nube') || central.modo === 'demo' ? () => setSaliendo(true) : undefined
   return (
     // Móvil: barra arriba y secciones abajo. Tablet (md): secciones en una columna a la izquierda.
     <div className="flex min-h-dvh flex-col md:flex-row">
-      <Secciones actual={seccion} ir={setSeccion} />
+      <Secciones actual={seccion} ir={setSeccion} salir={salir} />
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
-        <Encabezado titulo={actual.titulo} inicio={seccion === 'inicio'} conectado={central.conectado} />
+        <Encabezado titulo={actual.titulo} inicio={seccion === 'inicio'} conectado={central.conectado} salir={salir} />
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
           {seccion === 'inicio' ? <Inicio ir={setSeccion} />
             : seccion === 'abonos' ? <Abonos />
               : seccion === 'acuario' ? <MiAcuario ir={setSeccion} /> : <Pendiente />}
         </main>
       </div>
+      <CerrarSesion abierto={saliendo} cambiar={setSaliendo} />
     </div>
   )
 }
 
-function Encabezado({ titulo, inicio, conectado }: { titulo: string; inicio: boolean; conectado: boolean }) {
+/** Pide confirmación: después hay que volver a entrar con el usuario y la contraseña. */
+function CerrarSesion({ abierto, cambiar }: { abierto: boolean; cambiar: (abierto: boolean) => void }) {
+  return (
+    <Dialog open={abierto} onOpenChange={cambiar}>
+      <DialogContent className="flex max-w-sm flex-col gap-3 px-5 pt-5 pb-5 md:px-6 md:pt-6">
+        <DialogTitle className="pr-10">¿Cerrar sesión en este dispositivo?</DialogTitle>
+        <DialogDescription className="text-[15px]">
+          Para volver a usar la app acá vas a tener que entrar de nuevo con el usuario y la contraseña de AquaControl.
+        </DialogDescription>
+        <div className="mt-2 flex flex-col gap-2 md:flex-row-reverse">
+          <Button onClick={cerrarSesion} className="h-12 rounded-full px-6 text-base font-semibold">Cerrar sesión</Button>
+          <Button variant="ghost" onClick={() => cambiar(false)} className="h-12 rounded-full px-6 text-base text-muted-foreground">Cancelar</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const BOTON_SALIR = 'cursor-pointer items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none'
+
+function Encabezado({ titulo, inicio, conectado, salir }: { titulo: string; inicio: boolean; conectado: boolean; salir?: () => void }) {
   const ahora = useAhora()
   return (
     <header className="flex h-16 items-center gap-2.5 px-4 pt-[env(safe-area-inset-top)] md:h-auto md:min-h-14 md:gap-3 md:px-7 md:pt-[18px] md:pb-4">
@@ -62,11 +89,17 @@ function Encabezado({ titulo, inicio, conectado }: { titulo: string; inicio: boo
           <span className="font-heading text-[52px] leading-none font-medium tracking-[-0.02em]">{horaTxt(ahora)}</span>
         </div>
       )}
+      {/* En el móvil no hay menú lateral: cerrar sesión va arriba a la derecha */}
+      {salir && (
+        <button type="button" onClick={salir} aria-label="Cerrar sesión" className={cn(BOTON_SALIR, 'flex size-11 shrink-0 md:hidden')}>
+          <IconoSalir size={22} />
+        </button>
+      )}
     </header>
   )
 }
 
-function Secciones({ actual, ir }: { actual: Seccion; ir: (s: Seccion) => void }) {
+function Secciones({ actual, ir, salir }: { actual: Seccion; ir: (s: Seccion) => void; salir?: () => void }) {
   return (
     <nav aria-label="Secciones"
       className={cn(
@@ -88,6 +121,12 @@ function Secciones({ actual, ir }: { actual: Seccion; ir: (s: Seccion) => void }
           </button>
         )
       })}
+      {salir && (
+        <button type="button" onClick={salir} aria-label="Cerrar sesión" title="Cerrar sesión"
+          className={cn(BOTON_SALIR, 'mt-auto mb-[max(18px,env(safe-area-inset-bottom))] hidden size-14 md:flex')}>
+          <IconoSalir size={24} />
+        </button>
+      )}
     </nav>
   )
 }
