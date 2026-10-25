@@ -1,13 +1,15 @@
 // Lo que el usuario carga en la app (peces, plantas, plan de abonos, medidas). Queda en cada
 // dispositivo, con la misma clave que la app anterior: al cambiar de app no se pierde nada.
 import { useCallback, useSyncExternalStore } from 'react'
+import { ABONOS, type Abono } from '@/data'
 
 const CLAVE = 'aquacontrol.v1'
 
 export interface Guardado {
   peces: { id: string; cant: number }[]
   mias: string[]                                   // ids de plantas
-  plan: Record<'ec' | 'fl' | 'k', number[]>        // lunes a domingo, 1 = toca
+  abonos: Abono[]                                  // la lista de «Abonos»
+  plan: Record<string, number[]>                   // id del abono → lunes a domingo, 1 = toca
   largo: string
   ancho: string
   alto: string
@@ -25,6 +27,7 @@ const INICIAL: Guardado = {
     { id: 'cory', cant: 6 }, { id: 'garra', cant: 3 },
   ],
   mias: ['rotala-rotundifolia', 'hygrophila-polysperma', 'anubias-barteri', 'musgo-christmas', 'monte-carlo', 'staurogyne-repens'],
+  abonos: ABONOS,
   plan: { ec: [1, 1, 1, 1, 1, 1, 1], fl: [1, 0, 0, 1, 0, 0, 0], k: [0, 1, 0, 0, 1, 0, 1] },
   largo: '121', ancho: '41', alto: '55',
   abono: '', filtro: true, comida: 0,
@@ -36,6 +39,7 @@ function leer(): Guardado {
     // La app anterior guardaba abono y comida como booleanos al principio
     if (typeof g.abono !== 'string') delete g.abono
     if (typeof g.comida !== 'number') delete g.comida
+    if (!Array.isArray(g.abonos)) delete g.abonos  // la app anterior no tenía la lista
     return { ...INICIAL, ...g }
   } catch {
     return INICIAL

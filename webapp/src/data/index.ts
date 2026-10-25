@@ -39,21 +39,34 @@ export interface Planta {
 export const PECES: Record<string, Pez> = Object.fromEntries((pecesJson as Pez[]).map((p) => [p.id, p]))
 export const PLANTAS: Record<string, Planta> = Object.fromEntries((plantasJson as Planta[]).map((p) => [p.id, p]))
 
-export interface Abono {
-  id: 'ec' | 'fl' | 'k'
-  nombre: string
-  corto: string
-  ml: number
-  litros: number
-  regla: string
-  min: number
-  max: number
+/** Cada cuánto pide la etiqueta: veces por semana y los días que se marcan al cargarlo. */
+export type Frecuencia = 'diario' | '2-3' | '1-2' | '1'
+
+export const FRECUENCIAS: Record<Frecuencia, { min: number; max: number; txt: string; corto: string; plan: number[] }> = {
+  'diario': { min: 7, max: 7, txt: 'Todos los días', corto: 'etiqueta: diario', plan: [1, 1, 1, 1, 1, 1, 1] },
+  '2-3': { min: 2, max: 3, txt: '2–3 por semana', corto: 'etiqueta: 2–3', plan: [1, 0, 1, 0, 1, 0, 0] },
+  '1-2': { min: 1, max: 2, txt: '1–2 por semana', corto: 'etiqueta: 1–2', plan: [1, 0, 0, 1, 0, 0, 0] },
+  '1': { min: 1, max: 1, txt: '1 por semana', corto: 'etiqueta: 1', plan: [1, 0, 0, 0, 0, 0, 0] },
 }
 
+/** En este orden se muestran (las claves de FRECUENCIAS no lo mantienen: «1» va primero). */
+export const ORDEN_FRECUENCIAS: Frecuencia[] = ['diario', '2-3', '1-2', '1']
+
+/** Un abono de la lista: la dosis es la de la etiqueta («ml cada litros»). */
+export interface Abono {
+  id: string
+  nombre: string
+  corto?: string   // para «Abono de hoy», si el nombre es largo
+  ml: number
+  litros: number
+  frec: Frecuencia
+}
+
+// Los de la app anterior: sus ids son los del plan que ya tenía guardado
 export const ABONOS: Abono[] = [
-  { id: 'ec', nombre: 'Easy Carbo', corto: 'Easy Carbo', ml: 1, litros: 50, regla: '1 ml cada 50 L', min: 7, max: 7 },
-  { id: 'fl', nombre: 'Flourish', corto: 'Flourish', ml: 5, litros: 250, regla: '5 ml cada 250 L', min: 1, max: 2 },
-  { id: 'k', nombre: 'Flourish Potassium', corto: 'Potassium', ml: 5, litros: 125, regla: '5 ml cada 125 L', min: 2, max: 3 },
+  { id: 'ec', nombre: 'Easy Carbo', ml: 1, litros: 50, frec: 'diario' },
+  { id: 'fl', nombre: 'Flourish', ml: 5, litros: 250, frec: '1-2' },
+  { id: 'k', nombre: 'Flourish Potassium', corto: 'Potassium', ml: 5, litros: 125, frec: '2-3' },
 ]
 
 export const HORAS_COMIDA = [9, 19]  // igual que hours: en firmware/aquacontrol.yaml
