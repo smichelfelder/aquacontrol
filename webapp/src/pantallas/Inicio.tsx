@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { IconoAcuario, IconoComida, IconoFlecha, IconoOlas, IconoPez, IconoPlanta } from '@/components/iconos'
 import { HORAS_COMIDA } from '@/data'
 import {
-  abonosDeHoy, fmt, litrosNetos, misPeces, misPlantas, nivelAgua, nivelPlanta, objetivo, problemasPez,
+  abonosDeHoy, fmt, fueraDeAvisos, litrosNetos, misPeces, misPlantas, nivelAgua, nivelPlanta, objetivo, problemasPez,
 } from '@/lib/acuario'
 import { pulsar, tiene, useCentral } from '@/lib/central'
 import { useGuardado } from '@/lib/guardado'
@@ -66,7 +66,7 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
-        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && !rT.ok} pie={objTxt(rT, 0, ' °C')}
+        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && (!rT.ok || fueraDeAvisos(s))} pie={objTxt(rT, 0, ' °C')}
           onClick={() => setHistorial(true)} />
         <Sonda titulo="pH" valor={fmt(s.ph, 1)} alerta={s.ph != null && !rP.ok} pie={objTxt(rP, 1, '')} />
         <Sonda titulo="TDS" valor={s.tds == null ? '—' : String(Math.round(s.tds))} unidad="ppm" alerta={s.tds != null && !rD.ok} pie={objTxt(rD, 0, ' ppm')} />

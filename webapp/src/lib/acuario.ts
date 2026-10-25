@@ -15,17 +15,48 @@ export const fmt = (v: number | null | undefined, decimales: number) =>
 
 const dentro = (v: number | null, r: Rango) => v == null || (v >= r[0] && v <= r[1])
 
-const medida = (s: string) => {
+/** Una medida en cm, si es válida (10 a 400 cm). */
+export const medida = (s: string) => {
   const v = parseFloat(String(s).replace(',', '.'))
   return isFinite(v) && v >= 10 && v <= 400 ? v : null
 }
 
+/** Parte del volumen que queda para el agua: el resto es sustrato y decoración. */
+export const PARTE_AGUA = 0.85
+
+/** Medidas en cm; si alguna no es válida, se usa la del diseño para no dejar todo en blanco. */
+export function medidas(g: Guardado) {
+  const L = medida(g.largo), A = medida(g.ancho), H = medida(g.alto)
+  const ok = L != null && A != null && H != null
+  const largo = L ?? 121, ancho = A ?? 41, alto = H ?? 55
+  const bruto = (largo * ancho * alto) / 1000
+  return { largo, ancho, alto, ok, bruto, neto: bruto * PARTE_AGUA }
+}
+
 /** Litros netos: el bruto menos un 15 % de sustrato y decoración. */
-export function litrosNetos(g: Guardado) {
-  const L = medida(g.largo) ?? 121
-  const A = medida(g.ancho) ?? 41
-  const H = medida(g.alto) ?? 55
-  return (L * A * H) / 1000 * 0.85
+export const litrosNetos = (g: Guardado) => medidas(g).neto
+
+const r5 = (v: number) => Math.round(v / 5) * 5
+const r10 = (v: number) => Math.round(v / 10) * 10
+
+/** Lo que conviene según los litros netos, como en el diseño. */
+export function equipo(neto: number) {
+  return [
+    { nombre: 'Cambio de agua semanal', valor: `${r5(neto * 0.25)} L`, nota: '25 % del volumen neto' },
+    { nombre: 'Calentador', valor: `${r10(neto * 0.8)}–${r10(neto)} W`, nota: 'Unos 0,8–1 W por litro' },
+    { nombre: 'Caudal del filtro', valor: `${r10(neto * 4)}–${r10(neto * 6)} L/h`, nota: '4 a 6 veces el volumen por hora' },
+  ]
+}
+
+/**
+ * Ocupación de peces: centímetros de pez adulto contra litros netos (1 cm por litro es el
+ * 100 %). Hasta el 80 % está bien; «libre» son los cm que todavía entran hasta ese 80 %.
+ */
+export function ocupacion(g: Guardado) {
+  const neto = litrosNetos(g)
+  const usados = g.peces.reduce((a, p) => a + (PECES[p.id] ? p.cant * PECES[p.id].talla : 0), 0)
+  const pct = Math.round((usados / neto) * 100)
+  return { pct, libre: Math.max(0, Math.round(neto * 0.8 - usados)), nivel: (pct <= 80 ? 0 : pct <= 100 ? 1 : 2) as Nivel }
 }
 
 export function dosisMl(neto: number, ml: number, litros: number) {
@@ -81,6 +112,10 @@ export function nivelPlanta(s: Sondas, pl: Planta): Nivel {
   if (!CO2_ACUARIO && pl.co2 === 1) sube(1)
   return nivel
 }
+
+/** La temperatura salió del rango de avisos que se fijó en «Mi acuario» (la central avisa por Telegram). */
+export const fueraDeAvisos = (s: Sondas) =>
+  s.temp != null && ((s.tempMin != null && s.temp < s.tempMin) || (s.tempMax != null && s.temp > s.tempMax))
 
 export function nivelAgua(s: Sondas) {
   if (s.nivelBajo == null && s.nivelCritico == null) return { txt: '—', sub: 'Sensores sin conectar', tono: 'sin-dato' as const }

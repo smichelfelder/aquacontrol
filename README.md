@@ -68,7 +68,7 @@ Abrí https://aquacontrol-ten.vercel.app en Chrome del móvil o la tablet → me
 | El programa de la central (`firmware/aquacontrol.yaml`) | `esphome run aquacontrol.yaml` desde `firmware/`. Si agregaste sondas o botones, la app los detecta sola. |
 | El ícono (`web/icon.svg` lo arma `build_app.py` desde el diseño) | Volvé a dibujar `app/icons/icon-192.png` e `icon-512.png` desde ese SVG. |
 
-Al pasar de etapa, el programa de cada etapa está en el anexo del manual. Ojo: hay que conservar los bloques `web_server` (con `js_include`) y `mqtt` de `firmware/aquacontrol.yaml`, que no están en el manual.
+Al pasar de etapa, el programa de cada etapa está en el anexo del manual. Ojo: hay que conservar los bloques `web_server` (con `js_include`) y `mqtt` de `firmware/aquacontrol.yaml`, que no están en el manual, y también `number`, `globals` y el `on_value` de la temperatura (los avisos con el rango que se elige en la app).
 
 ## Qué se ve en la app según la etapa
 
@@ -81,7 +81,9 @@ Al pasar de etapa, el programa de cada etapa está en el anexo del manual. Ojo: 
 | 5 · Filtro y comida | Se activan «Alimentar» y «Filtro». Para apagar el filtro desde la app hace falta un botón `Filtro: apagar` en el programa. |
 | 6 · Montaje definitivo | Batería y corte de luz. |
 
-Las fichas de peces y plantas («Bien» / «Revisar») se calculan con los valores reales de las sondas. Los peces, plantas, abonos y medidas del acuario que cargás en la app se guardan en cada dispositivo por separado.
+Las fichas de peces y plantas («Bien» / «Revisar») se calculan con los valores reales de las sondas.
+
+El rango de temperatura de los avisos de Telegram (por defecto 24–27 °C) se cambia desde la app nueva, en «Mi acuario», y queda guardado en la central: avisa una vez al salir del rango y vuelve a avisar recién después de haber vuelto a él. Los peces, plantas, abonos y medidas del acuario que cargás en la app se guardan en cada dispositivo por separado.
 
 ## Problemas frecuentes
 
