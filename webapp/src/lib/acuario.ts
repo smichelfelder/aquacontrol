@@ -56,8 +56,10 @@ export function ocupacion(g: Guardado) {
   const neto = litrosNetos(g)
   const usados = g.peces.reduce((a, p) => a + (PECES[p.id] ? p.cant * PECES[p.id].talla : 0), 0)
   const pct = Math.round((usados / neto) * 100)
-  return { pct, libre: Math.max(0, Math.round(neto * 0.8 - usados)), nivel: (pct <= 80 ? 0 : pct <= 100 ? 1 : 2) as Nivel }
+  return { pct, usados, neto, libre: Math.max(0, Math.round(neto * 0.8 - usados)), nivel: nivelOcupacion(pct) }
 }
+
+export const nivelOcupacion = (pct: number): Nivel => (pct <= 80 ? 0 : pct <= 100 ? 1 : 2)
 
 /** ml por toma para los litros netos, redondeado a 0,1 ml. */
 export const dosis = (neto: number, ml: number, litros: number) => Math.round((neto / litros) * ml * 10) / 10
@@ -94,21 +96,44 @@ export function objetivo(g: Guardado, clave: 't' | 'p' | 'd', valor: number | nu
 export const misPeces = (g: Guardado): Pez[] => g.peces.filter((p) => PECES[p.id]).map((p) => PECES[p.id])
 export const misPlantas = (g: Guardado): Planta[] => g.mias.filter((id) => PLANTAS[id]).map((id) => PLANTAS[id])
 
-/** Cuántas cosas hay que revisar de un pez: agua fuera de rango y convivencia. */
-export function problemasPez(g: Guardado, s: Sondas, pez: Pez) {
-  let n = 0
-  if (!dentro(s.temp, pez.t)) n++
-  if (!dentro(s.ph, pez.p)) n++
-  if (!dentro(s.tds, pez.d)) n++
+/** Un aviso de «Mis peces»: nivel 1 = revisar (ámbar), 2 = problema serio (rojo). */
+export interface Aviso { txt: string; nivel: Nivel }
+
+/**
+ * Cómo convive un pez (uno mío o uno que se quiere sumar) con los que tengo: rangos de agua
+ * que no comparten y los avisos de cada especie. El nivel también sube si el agua no le sirve.
+ */
+export function convivencia(g: Guardado, s: Sondas, pez: Pez) {
+  const avisos: Aviso[] = []
+  let dura = false
   for (const otro of misPeces(g)) {
     if (otro.id === pez.id) continue
-    const tComun = Math.min(otro.t[1], pez.t[1]) - Math.max(otro.t[0], pez.t[0])
-    const pComun = Math.min(otro.p[1], pez.p[1]) - Math.max(otro.p[0], pez.p[0])
-    if (tComun < 0.5 || pComun < 0.2) n++
-    if (pez.extra[otro.id]) n++
-    if (otro.extra[pez.id]) n++
+    const falta = []
+    if (Math.min(otro.t[1], pez.t[1]) - Math.max(otro.t[0], pez.t[0]) < 0.5) falta.push('temperatura')
+    if (Math.min(otro.p[1], pez.p[1]) - Math.max(otro.p[0], pez.p[0]) < 0.2) falta.push('pH')
+    if (falta.length) { dura = true; avisos.push({ txt: `Con ${otro.nombre}: no comparten ${falta.join(' ni ')}.`, nivel: 2 }) }
+    if (pez.extra[otro.id]) avisos.push({ txt: pez.extra[otro.id], nivel: 1 })
+    // Lo que avisa el otro sobre este (el guppy no sabe que el betta lo ataca)
+    if (otro.extra[pez.id]) avisos.push({ txt: otro.extra[pez.id], nivel: 1 })
   }
-  return n
+  const agua = dentro(s.temp, pez.t) && dentro(s.ph, pez.p) && dentro(s.tds, pez.d)
+  const nivel: Nivel = dura ? 2 : !agua || avisos.length ? 1 : 0
+  return { avisos, nivel }
+}
+
+/** Lo que hay que revisar de un pez mío: agua fuera de rango y convivencia. */
+export function problemasPez(g: Guardado, s: Sondas, pez: Pez): Aviso[] {
+  const lista: Aviso[] = []
+  if (s.temp != null && !dentro(s.temp, pez.t)) {
+    lista.push({ txt: `Temperatura ${s.temp < pez.t[0] ? 'baja' : 'alta'}: pide ${pez.t[0]}–${pez.t[1]} °C y el agua está a ${fmt(s.temp, 1)} °C.`, nivel: 1 })
+  }
+  if (s.ph != null && !dentro(s.ph, pez.p)) {
+    lista.push({ txt: `pH ${s.ph < pez.p[0] ? 'bajo' : 'alto'}: pide ${fmt(pez.p[0], 1)}–${fmt(pez.p[1], 1)} y el agua tiene ${fmt(s.ph, 1)}.`, nivel: 1 })
+  }
+  if (s.tds != null && !dentro(s.tds, pez.d)) {
+    lista.push({ txt: `Agua ${s.tds < pez.d[0] ? 'demasiado blanda' : 'demasiado dura'}: pide ${pez.d[0]}–${pez.d[1]} ppm de TDS.`, nivel: 1 })
+  }
+  return lista.concat(convivencia(g, s, pez).avisos)
 }
 
 export function nivelPlanta(s: Sondas, pl: Planta): Nivel {

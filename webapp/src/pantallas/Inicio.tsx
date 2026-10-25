@@ -54,7 +54,7 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
 
   // Resúmenes
   const peces = misPeces(g)
-  const pecesRevisar = peces.filter((p) => problemasPez(g, s, p) > 0).length
+  const pecesRevisar = peces.filter((p) => problemasPez(g, s, p).length > 0).length
   const plantas = misPlantas(g)
   const plantasRevisar = plantas.filter((p) => nivelPlanta(s, p) > 0).length
 
