@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      // La tablet de 7" tiene 1280 px de ancho en una pantalla chica y todo se ve diminuto:
+      // en pantallas táctiles así de anchas se dibuja 1,25 veces más grande (en horizontal,
+      // como si midiera 1024 px). Los ordenadores no usan esta etiqueta y quedan igual.
+      ;(() => {
+        const meta = document.querySelector('meta[name="viewport"]')
+        const tactil = matchMedia('(pointer: coarse)')
+        const ajustar = () => {
+          const grande = tactil.matches && Math.max(screen.width, screen.height) >= 1200
+          const escala = 1.25
+          meta.content = grande
+            ? `width=${Math.round(screen.width / escala)}, initial-scale=${escala}, viewport-fit=cover`
+            : 'width=device-width, initial-scale=1, viewport-fit=cover'
+        }
+        ajustar()
+        matchMedia('(orientation: portrait)').addEventListener('change', ajustar)
+      })()
+    </script>
     <meta name="theme-color" content="#0b1d20" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />

@@ -229,7 +229,7 @@ function Fila({ pl, s, marcado, onClick }: { pl: Planta; s: Sondas; marcado: boo
             </span>
           )}
         </span>
-        <span className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 sm:gap-6">
+        <span className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 sm:gap-6 lg:grid-cols-2 lg:gap-x-4 lg:gap-y-2.5 xl:grid-cols-4 xl:gap-6">
           <Niveles nombre="LUZ" n={pl.luz} txt={LUZ[pl.luz]} ok={luzOk(pl)} color={luzOk(pl) ? 'bg-primary' : 'bg-aviso'} />
           <Niveles nombre="CO₂" n={pl.co2} txt={CO2[pl.co2]} ok={co2Ok(pl)} color={co2Ok(pl) ? 'bg-primary' : co2Mal} />
           <Barrita nombre="TEMP." r={pl.t} lo={14} hi={32} v={s.temp} txt={`${pl.t[0]}–${pl.t[1]} °C`} />

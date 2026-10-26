@@ -68,12 +68,12 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
           onClick={() => setHistorial(true)} />
         <Sonda titulo="pH" valor={fmt(s.ph, 1)} alerta={s.ph != null && !rP.ok} pie={objTxt(rP, 1, '')} />
         <Sonda titulo="TDS" valor={s.tds == null ? '—' : String(Math.round(s.tds))} unidad="ppm" alerta={s.tds != null && !rD.ok} pie={objTxt(rD, 0, ' ppm')} />
-        <Sonda titulo="Nivel de agua" valor={nivel.txt} pie={nivel.sub}
+        <Sonda titulo="Nivel de agua" valor={nivel.txt} pie={nivel.sub} palabra
           tono={{ bien: 'text-primary', aviso: 'text-aviso', alerta: 'text-alerta', 'sin-dato': 'text-tenue' }[nivel.tono]} />
       </div>
       <HistorialTemperatura abierto={historial} cambiar={setHistorial} actual={s.temp} rango={rT.rango} modo={central.modo} />
 
-      <div className="flex flex-col gap-3.5 md:grid md:flex-1 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:grid-rows-[1fr_auto] md:gap-4">
+      <div className="flex flex-col gap-3.5 md:grid md:flex-1 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] md:grid-rows-[1fr_auto] md:gap-4">
         {/* Abono de hoy */}
         <section aria-labelledby="abono-hoy"
           className="flex flex-col gap-3 rounded-[20px] border border-primary/40 bg-[rgb(12_40_31/0.78)] px-4 py-3.5 md:col-start-1 md:row-start-1 md:gap-3.5 md:rounded-[22px] md:px-6 md:py-[18px]">
@@ -137,21 +137,22 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
   )
 }
 
-/** Con onClick se puede tocar (abre el historial) y muestra una flecha. */
-function Sonda({ titulo, valor, unidad, pie, alerta, tono, onClick }: {
-  titulo: string; valor: string; unidad?: string; pie: string; alerta?: boolean; tono?: string; onClick?: () => void
+/** Con onClick se puede tocar (abre el historial) y muestra una flecha. Con palabra, el valor es texto («Normal») y va más chico para entrar en la columna. */
+function Sonda({ titulo, valor, unidad, pie, alerta, tono, palabra, onClick }: {
+  titulo: string; valor: string; unidad?: string; pie: string; alerta?: boolean; tono?: string; palabra?: boolean; onClick?: () => void
 }) {
   const Caja = onClick ? 'button' : 'div'
   return (
     <Caja {...(onClick && { type: 'button' as const, onClick, 'aria-label': `${titulo}: ${valor} ${unidad ?? ''}. Ver historial` })}
-      className={cn('flex flex-col gap-1 rounded-[18px] border border-border bg-panel px-4 py-3.5 text-left md:gap-1.5 md:rounded-[20px] md:px-[22px] md:py-[18px]',
+      className={cn('flex flex-col gap-1 rounded-[18px] border border-border bg-panel px-4 py-3.5 text-left md:gap-1.5 md:rounded-[20px] md:px-5 md:py-4',
         onClick && 'cursor-pointer transition-colors hover:bg-[rgb(14_34_36/0.8)] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none')}>
       <div className="flex items-center justify-between text-sm text-muted-foreground md:text-base">
         {titulo}
         {onClick && <IconoFlecha size={18} className="shrink-0 text-tenue" />}
       </div>
       <div className="flex items-baseline gap-1 md:gap-1.5">
-        <span className={cn('font-heading text-[34px] leading-[1.15] font-medium md:text-[50px] md:leading-[1.1]', tono ?? (alerta ? 'text-aviso' : 'text-foreground'))}>
+        <span className={cn('font-heading text-[34px] leading-[1.15] font-medium md:text-[50px] md:leading-[1.1]', palabra && 'md:text-[38px] md:leading-[1.45]',
+          tono ?? (alerta ? 'text-aviso' : 'text-foreground'))}>
           {valor}
         </span>
         {unidad && <span className="text-base text-muted-foreground md:text-[22px]">{unidad}</span>}
@@ -168,12 +169,12 @@ function Accion({ icono, titulo, sub, children, className, ...props }: {
     <button type="button" {...props}
       className={cn('flex items-center gap-3.5 rounded-[20px] border border-border bg-panel px-4 py-3.5 text-left transition-colors',
         'enabled:cursor-pointer enabled:hover:bg-[rgb(14_34_36/0.8)] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
-        'md:flex-1 md:gap-[18px] md:rounded-[22px] md:px-6 md:py-[18px]', className)}>
+        'md:flex-1 md:gap-4 md:rounded-[22px] md:px-5 md:py-[18px]', className)}>
       <span className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-primary/14 text-secondary-foreground md:size-14 md:rounded-2xl [&_svg]:size-[26px] md:[&_svg]:size-[30px]">
         {icono}
       </span>
       <span className="flex grow flex-col gap-0.5 md:gap-1">
-        <span className="font-heading text-[19px] font-medium md:text-[26px]">{titulo}</span>
+        <span className="font-heading text-[19px] font-medium md:text-2xl">{titulo}</span>
         <span className="text-sm text-muted-foreground md:text-base">{sub}</span>
       </span>
       {children}
@@ -187,11 +188,11 @@ function Acceso({ titulo, sub, subColor, icono, caja, marco, onClick }: {
   return (
     <button type="button" onClick={onClick}
       className={cn('flex min-h-16 cursor-pointer items-center gap-3 rounded-[18px] border px-3.5 text-left transition-[filter] hover:brightness-125',
-        'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none md:min-h-24 md:rounded-[22px] md:px-4', marco)}>
+        'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none md:flex-col md:items-start md:gap-2.5 md:rounded-[22px] md:p-4', marco)}>
       <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl md:size-[50px] md:rounded-[15px] md:[&_svg]:size-7', caja)}>
         {icono}
       </span>
-      <span className="flex min-w-0 grow flex-col md:gap-[3px]">
+      <span className="flex min-w-0 grow flex-col md:gap-0.5">
         <span className="font-heading text-[17px] md:text-xl md:font-medium">{titulo}</span>
         <span className={cn('text-[13px] md:text-sm', subColor)}>{sub}</span>
       </span>
