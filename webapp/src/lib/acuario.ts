@@ -6,8 +6,8 @@ import type { Sondas } from './central'
 export type Nivel = 0 | 1 | 2  // bien · revisar · problema
 
 // Hasta que se puedan cargar en «Mi acuario», como en el diseño
-const LUZ_ACUARIO: 0 | 1 | 2 = 1  // media
-const CO2_ACUARIO = true
+export const LUZ_ACUARIO: 0 | 1 | 2 = 1  // media
+export const CO2_ACUARIO: boolean = true
 
 /** 25,4 · sin dato: — */
 export const fmt = (v: number | null | undefined, decimales: number) =>
@@ -167,16 +167,24 @@ export function problemasPez(g: Guardado, s: Sondas, pez: Pez): Aviso[] {
   return problemasAgua(s, pez).concat(convivencia(g, s, pez).avisos)
 }
 
-export function nivelPlanta(s: Sondas, pl: Planta): Nivel {
-  let nivel: Nivel = 0
-  const sube = (n: Nivel) => { if (n > nivel) nivel = n }
-  if (!dentro(s.temp, pl.t)) sube(1)
-  if (!dentro(s.ph, pl.p)) sube(1)
-  if (pl.luz > LUZ_ACUARIO) sube(pl.luz - LUZ_ACUARIO >= 2 ? 2 : 1)
-  if (!CO2_ACUARIO && pl.co2 === 2) sube(2)
-  if (!CO2_ACUARIO && pl.co2 === 1) sube(1)
-  return nivel
+const NIVEL_LUZ = ['baja', 'media', 'alta']
+
+/** Lo que no le sirve a una planta: agua fuera de rango, luz y CO₂ (como evaluar() del diseño). */
+export function problemasPlanta(s: Sondas, pl: Planta): Aviso[] {
+  const lista: Aviso[] = []
+  if (!dentro(s.temp, pl.t)) lista.push({ txt: `Temperatura ${s.temp! < pl.t[0] ? 'baja' : 'alta'}: pide ${pl.t[0]}–${pl.t[1]} °C.`, nivel: 1 })
+  if (!dentro(s.ph, pl.p)) lista.push({ txt: `pH ${s.ph! < pl.p[0] ? 'bajo' : 'alto'}: pide ${fmt(pl.p[0], 1)}–${fmt(pl.p[1], 1)}.`, nivel: 1 })
+  if (pl.luz > LUZ_ACUARIO) {
+    lista.push({ txt: `Pide luz ${NIVEL_LUZ[pl.luz]} y tu acuario tiene luz ${NIVEL_LUZ[LUZ_ACUARIO]}.`, nivel: pl.luz - LUZ_ACUARIO >= 2 ? 2 : 1 })
+  }
+  if (pl.luz === 0 && LUZ_ACUARIO === 2) lista.push({ txt: 'Prefiere poca luz: ubicala a la sombra de otras plantas.', nivel: 1 })
+  if (!CO2_ACUARIO && pl.co2 === 2) lista.push({ txt: 'Necesita CO₂ y tu acuario no tiene.', nivel: 2 })
+  if (!CO2_ACUARIO && pl.co2 === 1) lista.push({ txt: 'Crece mejor con CO₂.', nivel: 1 })
+  return lista
 }
+
+export const nivelPlanta = (s: Sondas, pl: Planta): Nivel =>
+  problemasPlanta(s, pl).reduce<Nivel>((n, a) => (a.nivel > n ? a.nivel : n), 0)
 
 /** La temperatura salió del rango de avisos que se fijó en «Mi acuario» (la central avisa por Telegram). */
 export const fueraDeAvisos = (s: Sondas) =>
