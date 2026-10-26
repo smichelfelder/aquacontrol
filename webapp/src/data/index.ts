@@ -79,4 +79,3 @@ export const SEXADO: Record<string, Sexado> = {
   gouenano: 'harem', goumiel: 'harem', gouperla: 'harem', apisto: 'harem', ramirezi: 'pareja', krib: 'pareja', boliviano: 'pareja',
 }
 
-export const HORAS_COMIDA = [9, 19]  // igual que hours: en firmware/aquacontrol.yaml

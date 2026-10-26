@@ -8,6 +8,9 @@ const CLAVE = 'aquacontrol.v1'
 /** Una especie mía. cant es el total (la app anterior solo guardaba eso); sin m, h y s son todos sin sexar. */
 export interface MiPez { id: string; cant: number; m?: number; h?: number; s?: number }
 
+/** Una toma del alimentador: hora, días (lunes a domingo, 1 = come) y vueltas del tambor. */
+export interface Toma { id: string; h: number; m: number; dias: number[]; vueltas: number; activa: boolean }
+
 export interface Guardado {
   peces: MiPez[]
   mias: string[]                                   // ids de plantas
@@ -19,6 +22,8 @@ export interface Guardado {
   abono: string    // 'AAAA-MM-DD HH:MM' del último abono marcado
   filtro: boolean  // lo último que se pidió al filtro
   comida: number   // cuándo se dio de comer (ms)
+  tomas: Toma[]    // horario del alimentador
+  pausa: number    // minutos de filtro apagado en cada toma
   sel?: string
   selP?: string
 }
@@ -34,6 +39,12 @@ const INICIAL: Guardado = {
   plan: { ec: [1, 1, 1, 1, 1, 1, 1], fl: [1, 0, 0, 1, 0, 0, 0], k: [0, 1, 0, 0, 1, 0, 1] },
   largo: '121', ancho: '41', alto: '55',
   abono: '', filtro: true, comida: 0,
+  tomas: [
+    { id: 't1', h: 9, m: 0, dias: [1, 1, 1, 1, 1, 1, 0], vueltas: 1, activa: true },
+    { id: 't2', h: 20, m: 0, dias: [1, 1, 1, 1, 1, 1, 0], vueltas: 1, activa: true },
+    { id: 't3', h: 13, m: 30, dias: [0, 0, 0, 0, 0, 1, 0], vueltas: 1, activa: false },
+  ],
+  pausa: 10,
 }
 
 function leer(): Guardado {
@@ -43,6 +54,8 @@ function leer(): Guardado {
     if (typeof g.abono !== 'string') delete g.abono
     if (typeof g.comida !== 'number') delete g.comida
     if (!Array.isArray(g.abonos)) delete g.abonos  // la app anterior no tenía la lista
+    if (!Array.isArray(g.tomas)) delete g.tomas
+    if (typeof g.pausa !== 'number') delete g.pausa
     return { ...INICIAL, ...g }
   } catch {
     return INICIAL

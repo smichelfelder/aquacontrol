@@ -2,17 +2,15 @@ import { useState, type ComponentProps, type ReactNode } from 'react'
 import { HistorialTemperatura } from '@/components/HistorialTemperatura'
 import { Button } from '@/components/ui/button'
 import { IconoAcuario, IconoComida, IconoFlecha, IconoOlas, IconoPez, IconoPlanta } from '@/components/iconos'
-import { HORAS_COMIDA } from '@/data'
 import {
   abonosDeHoy, fmt, fueraDeAvisos, litrosNetos, misPeces, misPlantas, nivelAgua, nivelPlanta, objetivo, problemasPez,
 } from '@/lib/acuario'
 import { pulsar, tiene, useCentral } from '@/lib/central'
+import { comidaServida, horaToma, proximasTomas } from '@/lib/comida'
 import { useGuardado } from '@/lib/guardado'
 import { diaISO, fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
 import { cn } from '@/lib/utils'
 import type { Seccion } from '@/App'
-
-const COMIDA_MS = 10 * 60 * 1000  // el filtro queda en pausa 10 min después de comer
 
 export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
   const central = useCentral()
@@ -38,9 +36,9 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
   // Comedero y filtro (se activan en la etapa 5)
   const hayComedero = tiene('button/Alimentar')
   const hayFiltro = tiene('button/Filtro: encender')
-  const comidaOn = ahora.getTime() - g.comida < COMIDA_MS
+  const comidaOn = comidaServida(g, ahora)
   const filtroOn = hayFiltro && !comidaOn && g.filtro
-  const proxima = HORAS_COMIDA.find((h) => h > ahora.getHours()) ?? HORAS_COMIDA[0]
+  const proxima = proximasTomas(g.tomas, ahora, 8)[0]
   const alimentar = () => {
     if (!hayComedero || comidaOn) return
     pulsar('button/Alimentar')
@@ -108,7 +106,8 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
         <div className="flex flex-col gap-3.5 md:col-start-2 md:row-span-2 md:row-start-1 md:gap-4">
           <Accion icono={<IconoComida />} onClick={alimentar} disabled={!hayComedero}
             titulo={comidaOn ? 'Comida servida' : 'Alimentar ahora'}
-            sub={!hayComedero ? 'Se activa en la etapa 5' : comidaOn ? 'Filtro en pausa 10 min' : `Próxima toma: ${proxima}:00`} />
+            sub={!hayComedero ? 'Se activa en la etapa 5' : comidaOn ? `Filtro en pausa ${g.pausa} min`
+              : proxima ? `Próxima toma: ${proxima.off === 1 ? 'mañana ' : ''}${horaToma(proxima.t)}` : 'Sin tomas programadas'} />
           <Accion icono={<IconoOlas />} onClick={cambiarFiltro} disabled={!hayFiltro}
             role="switch" aria-checked={filtroOn}
             titulo="Filtro"

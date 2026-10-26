@@ -19,6 +19,8 @@ export interface Sondas {
   corriente: boolean | null
   tempMin: number | null         // avisos por Telegram: los fija «Mi acuario» en la central
   tempMax: number | null
+  tambor: number | null          // alimentador (etapa 5): vueltas de comida que quedan en el tambor
+  bateriaAlim: number | null
 }
 
 export type { Credenciales }
@@ -49,11 +51,13 @@ const MAPA: Record<string, keyof Sondas> = {
   'binary_sensor/Corriente de red': 'corriente',
   'number/Temperatura mínima': 'tempMin',
   'number/Temperatura máxima': 'tempMax',
+  'sensor/Comida en el tambor': 'tambor',
+  'sensor/Batería del alimentador': 'bateriaAlim',
 }
 
 const CLAVE_MQTT = 'aquacontrol.mqtt'
 const SIN_DATOS: Sondas = {
-  temp: null, ph: null, tds: null, bateria: null, nivelBajo: null, nivelCritico: null, corriente: null, tempMin: null, tempMax: null,
+  temp: null, ph: null, tds: null, bateria: null, nivelBajo: null, nivelCritico: null, corriente: null, tempMin: null, tempMax: null, tambor: null, bateriaAlim: null,
 }
 
 function elegirModo(): EstadoCentral['modo'] {
@@ -177,7 +181,7 @@ function conectarDemo() {
   ;['button/Alimentar', 'button/Filtro: encender', 'button/Filtro: apagar', 'number/Temperatura mínima', 'number/Temperatura máxima'].forEach(visto)
   avisar({
     conectado: true,
-    sondas: { temp: 25.4, ph: 6.8, tds: 180, bateria: 100, nivelBajo: true, nivelCritico: true, corriente: true, tempMin: 24, tempMax: 27 },
+    sondas: { temp: 25.4, ph: 6.8, tds: 180, bateria: 100, nivelBajo: true, nivelCritico: true, corriente: true, tempMin: 24, tempMax: 27, tambor: 22, bateriaAlim: 82 },
   })
   enviar = (id, valor) => {
     // La central de verdad devuelve el valor nuevo como estado: acá se simula con un poco de demora

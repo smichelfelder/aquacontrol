@@ -1,5 +1,5 @@
 import { useState, type ComponentType, type ReactNode } from 'react'
-import { IconoAcuario, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, IconoSalir, IconoVolver, Logo } from '@/components/iconos'
+import { IconoAcuario, IconoAlimentador, IconoCalendario, IconoInicio, IconoPez, IconoPlanta, IconoSalir, IconoVolver, Logo } from '@/components/iconos'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cerrarSesion, useCentral } from '@/lib/central'
@@ -7,13 +7,14 @@ import { hayCuenta } from '@/lib/cuenta'
 import { fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
 import { cn } from '@/lib/utils'
 import { Abonos } from '@/pantallas/Abonos'
+import { Alimentador } from '@/pantallas/Alimentador'
 import { Ingreso } from '@/pantallas/Ingreso'
 import { Inicio } from '@/pantallas/Inicio'
 import { MiAcuario } from '@/pantallas/MiAcuario'
 import { Peces } from '@/pantallas/Peces'
 import { Plantas } from '@/pantallas/Plantas'
 
-export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'acuario'
+export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'comida' | 'acuario'
 
 /** Lo que una pantalla pone en la barra de arriba: otro título, volver y, solo en tablet, algo al lado del título y a la derecha. */
 export interface Barra { titulo: string; atras?: () => void; junto?: ReactNode; accion?: ReactNode }
@@ -23,6 +24,7 @@ const SECCIONES: { id: Seccion; corto: string; titulo: string; Icono: ComponentT
   { id: 'peces', corto: 'Peces', titulo: 'Mis peces', Icono: IconoPez },
   { id: 'plantas', corto: 'Plantas', titulo: 'Mis plantas', Icono: IconoPlanta },
   { id: 'abonos', corto: 'Abonos', titulo: 'Abonos', Icono: IconoCalendario },
+  { id: 'comida', corto: 'Comida', titulo: 'Horario de comida', Icono: IconoAlimentador },
   { id: 'acuario', corto: 'Acuario', titulo: 'Mi acuario', Icono: IconoAcuario },
 ]
 
@@ -53,6 +55,7 @@ export default function App() {
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
           {seccion === 'inicio' ? <Inicio ir={setSeccion} />
             : seccion === 'abonos' ? <Abonos />
+              : seccion === 'comida' ? <Alimentador barra={setBarra} />
               : seccion === 'acuario' ? <MiAcuario ir={setSeccion} />
                 : seccion === 'peces' ? <Peces barra={setBarra} /> : <Plantas barra={setBarra} />}
         </main>
@@ -122,7 +125,7 @@ function Secciones({ actual, ir, salir }: { actual: Seccion; ir: (s: Seccion) =>
   return (
     <nav aria-label="Secciones"
       className={cn(
-        'fixed inset-x-0 bottom-0 z-10 grid h-20 grid-cols-5 border-t border-[rgb(170_225_212/0.1)] bg-barra pt-2.5 pb-[env(safe-area-inset-bottom)]',
+        'fixed inset-x-0 bottom-0 z-10 grid h-20 grid-cols-6 border-t border-[rgb(170_225_212/0.1)] bg-barra pt-2.5 pb-[env(safe-area-inset-bottom)]',
         'md:sticky md:top-0 md:flex md:h-dvh md:w-24 md:shrink-0 md:flex-col md:items-center md:gap-3.5 md:border-t-0 md:border-r md:bg-barra/85 md:pt-[18px]',
       )}>
       <div className="mb-3.5 hidden md:block"><Logo size={40} /></div>
