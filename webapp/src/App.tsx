@@ -126,20 +126,20 @@ function Secciones({ actual, ir, salir }: { actual: Seccion; ir: (s: Seccion) =>
     <nav aria-label="Secciones"
       className={cn(
         'fixed inset-x-0 bottom-0 z-10 grid h-20 grid-cols-6 border-t border-[rgb(170_225_212/0.1)] bg-barra pt-2.5 pb-[env(safe-area-inset-bottom)]',
-        'md:sticky md:top-0 md:flex md:h-dvh md:w-24 md:shrink-0 md:flex-col md:items-center md:gap-3.5 md:border-t-0 md:border-r md:bg-barra/85 md:pt-[18px]',
+        'md:sticky md:top-0 md:flex md:h-dvh md:w-28 md:shrink-0 md:flex-col md:items-center md:gap-3 md:border-t-0 md:border-r md:bg-barra/85 md:pt-[18px]',
       )}>
       <div className="mb-3.5 hidden md:block"><Logo size={40} /></div>
       {SECCIONES.map(({ id, corto, Icono }) => {
         const on = id === actual
         return (
           <button key={id} type="button" onClick={() => ir(id)} aria-current={on ? 'page' : undefined}
-            className={cn('flex cursor-pointer flex-col items-center gap-1 focus-visible:outline-none md:w-20',
+            className={cn('flex cursor-pointer flex-col items-center gap-1 focus-visible:outline-none md:w-24',
               on ? 'text-accent-foreground' : 'text-muted-foreground')}>
-            <span className={cn('flex h-8 w-[60px] items-center justify-center rounded-2xl transition-colors md:w-14',
+            <span className={cn('flex h-8 w-[60px] items-center justify-center rounded-2xl transition-colors md:h-10 md:w-[68px] md:[&_svg]:size-[26px]',
               on ? 'bg-primary/22' : 'hover:bg-accent', '[button:focus-visible_&]:ring-3 [button:focus-visible_&]:ring-ring/50')}>
               <Icono size={22} />
             </span>
-            <span className={cn('text-xs md:text-[13px]', on ? 'font-semibold' : 'font-medium')}>{corto}</span>
+            <span className={cn('text-xs md:text-[15px]', on ? 'font-semibold' : 'font-medium')}>{corto}</span>
           </button>
         )
       })}
