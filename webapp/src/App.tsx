@@ -11,6 +11,7 @@ import { Ingreso } from '@/pantallas/Ingreso'
 import { Inicio } from '@/pantallas/Inicio'
 import { MiAcuario } from '@/pantallas/MiAcuario'
 import { Peces } from '@/pantallas/Peces'
+import { Plantas } from '@/pantallas/Plantas'
 
 export type Seccion = 'inicio' | 'peces' | 'plantas' | 'abonos' | 'acuario'
 
@@ -53,7 +54,7 @@ export default function App() {
           {seccion === 'inicio' ? <Inicio ir={setSeccion} />
             : seccion === 'abonos' ? <Abonos />
               : seccion === 'acuario' ? <MiAcuario ir={setSeccion} />
-                : seccion === 'peces' ? <Peces barra={setBarra} /> : <Pendiente />}
+                : seccion === 'peces' ? <Peces barra={setBarra} /> : <Plantas barra={setBarra} />}
         </main>
       </div>
       <CerrarSesion abierto={saliendo} cambiar={setSaliendo} />
@@ -146,13 +147,5 @@ function Secciones({ actual, ir, salir }: { actual: Seccion; ir: (s: Seccion) =>
         </button>
       )}
     </nav>
-  )
-}
-
-function Pendiente() {
-  return (
-    <div className="rounded-[18px] border border-border bg-panel px-5 py-6 text-muted-foreground">
-      Esta sección todavía no está en la app nueva. Por ahora usá la app anterior.
-    </div>
   )
 }

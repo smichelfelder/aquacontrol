@@ -33,7 +33,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // webp: las fotos de los peces, para que se vean también sin internet
+        // webp: las fotos de los peces y las plantas, para que se vean también sin internet
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
         navigateFallback: 'index.html',
         // /events y los botones son de la central: nunca desde la caché
