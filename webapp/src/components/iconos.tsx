@@ -15,7 +15,8 @@ function Trazo({ size = 24, strokeWidth = 1.8, children, ...props }: P) {
 export const IconoInicio = (p: P) => <Trazo {...p}><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></Trazo>
 export const IconoPez = (p: P) => <Trazo {...p}><path d="M3 12c3-4 7-6 11-6 3 0 5 2 7 6-2 4-4 6-7 6-4 0-8-2-11-6zM3 12l-1-3M3 12l-1 3" /></Trazo>
 export const IconoComida = (p: P) => <Trazo {...p}><path d="M3 12c3-4 7-6 11-6 3 0 5 2 7 6-2 4-4 6-7 6-4 0-8-2-11-6zM3 12l-1-3M3 12l-1 3" /><circle cx="16" cy="11" r="0.8" /></Trazo>
-export const IconoPlanta = (p: P) => <Trazo {...p}><path d="M12 21V9M12 13c-3 0-5-2-5.5-5 3 0 5 2 5.5 5zM12 10c2.5 0 4.5-2 5-5-3 0-4.6 2-5 5zM12 17c2.5 0 4.5-1.6 5-4-2.6 0-4.5 1.6-5 4z" /></Trazo>
+export const IconoAlimentador = (p: P) => <Trazo {...p}><rect x="4" y="4" width="16" height="9" rx="4.5" /><circle cx="12" cy="8.5" r="1.6" /><path d="M10 17v.01M14 16v.01M12 20v.01" /></Trazo>
+export const IconoPlanta =(p: P) => <Trazo {...p}><path d="M12 21V9M12 13c-3 0-5-2-5.5-5 3 0 5 2 5.5 5zM12 10c2.5 0 4.5-2 5-5-3 0-4.6 2-5 5zM12 17c2.5 0 4.5-1.6 5-4-2.6 0-4.5 1.6-5 4z" /></Trazo>
 export const IconoCalendario = (p: P) => <Trazo {...p}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></Trazo>
 export const IconoAcuario = (p: P) => <Trazo {...p}><rect x="3" y="5" width="18" height="13" rx="1.5" /><path d="M3 9.5h18M7 18v2M17 18v2" /></Trazo>
 export const IconoOlas = (p: P) => <Trazo {...p}><path d="M4 7c3 0 3 2 6 2s3-2 6-2 3 2 4 2M4 12c3 0 3 2 6 2s3-2 6-2 3 2 4 2M4 17c3 0 3 2 6 2s3-2 6-2 3 2 4 2" /></Trazo>
