@@ -36,7 +36,7 @@ export default function App() {
   if (central.pide) return <Ingreso pide={central.pide} />
   if (central.cargando) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Cargando la cuenta">
+      <div className="flex min-h-(--alto) items-center justify-center" role="status" aria-label="Cargando la cuenta">
         <span className="animate-pulse"><Logo size={56} /></span>
       </div>
     )
@@ -47,7 +47,7 @@ export default function App() {
   const salir = (hayCuenta && central.modo === 'nube') || central.modo === 'demo' ? () => setSaliendo(true) : undefined
   return (
     // Móvil: barra arriba y secciones abajo. Tablet (md): secciones en una columna a la izquierda.
-    <div className="flex min-h-dvh flex-col md:flex-row">
+    <div className="flex min-h-(--alto) flex-col md:flex-row">
       <Secciones actual={seccion} ir={setSeccion} salir={salir} />
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
         <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} junto={barra?.junto} accion={barra?.accion}
@@ -126,7 +126,7 @@ function Secciones({ actual, ir, salir }: { actual: Seccion; ir: (s: Seccion) =>
     <nav aria-label="Secciones"
       className={cn(
         'fixed inset-x-0 bottom-0 z-10 grid h-20 grid-cols-6 border-t border-[rgb(170_225_212/0.1)] bg-barra pt-2.5 pb-[env(safe-area-inset-bottom)]',
-        'md:sticky md:top-0 md:flex md:h-dvh md:w-28 md:shrink-0 md:flex-col md:items-center md:gap-3 md:border-t-0 md:border-r md:bg-barra/85 md:pt-[18px]',
+        'md:sticky md:top-0 md:flex md:h-(--alto) md:w-28 md:shrink-0 md:flex-col md:items-center md:gap-3 md:border-t-0 md:border-r md:bg-barra/85 md:pt-[18px]',
       )}>
       <div className="mb-3.5 hidden md:block"><Logo size={40} /></div>
       {SECCIONES.map(({ id, corto, Icono }) => {
