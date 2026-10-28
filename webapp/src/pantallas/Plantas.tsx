@@ -16,7 +16,7 @@ type Vista = 'lista' | 'detalle' | 'agregar' | 'candidato'
 
 const PANEL = 'rounded-[22px] border border-border bg-panel backdrop-blur-[8px]'
 // En pantalla ancha todo entra en el alto de la pantalla y cada panel tiene su propio scroll
-const ALTO = 'lg:h-[calc(100dvh-118px)] lg:min-h-[520px]'
+const ALTO = 'lg:h-[calc(var(--alto)-118px)] lg:min-h-[520px]'
 const SCROLL = 'lg:min-h-0 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 const ETIQUETA = 'text-sm tracking-[0.08em] text-tenue'
 const FONDO = ['bg-primary', 'bg-aviso', 'bg-alerta']

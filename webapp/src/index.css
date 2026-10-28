@@ -6,6 +6,16 @@
 
 /* La app es siempre oscura: los colores salen del diseño (diseno/Pantallas AquaControl.html). */
 
+/* Con el zoom de la tablet (index.html) la app mide 1024 px aunque la pantalla mida más:
+   «xl:» (desde 1280 px) no se aplica ahí, aunque la media query sí se cumpla. */
+@custom-variant xl {
+  @media (width >= 80rem) {
+    &:where(:not(.tablet *)) {
+      @slot;
+    }
+  }
+}
+
 @theme inline {
   --font-sans: "Manrope Variable", system-ui, sans-serif;
   --font-heading: "Sora Variable", sans-serif;
@@ -48,6 +58,8 @@
 
 :root {
   color-scheme: dark;
+  /* Alto de la pantalla: con el zoom de la tablet (index.html) 100dvh crece, y se compensa */
+  --alto: calc(100dvh / var(--zoom, 1));
   --background: #0b1d20;
   --foreground: #e8f1ef;
   --card: rgb(9 24 26 / 0.7);
@@ -77,7 +89,7 @@
     @apply font-sans;
   }
   body {
-    @apply min-h-dvh text-foreground;
+    @apply min-h-(--alto) text-foreground;
     margin: 0;
     background: linear-gradient(180deg, #0d2427 0%, #0b1d20 45%, #0a191b 100%) fixed, #0b1d20;
   }

@@ -4,21 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script>
-      // La tablet de 7" tiene 1280 px de ancho en una pantalla chica y todo se ve diminuto:
-      // en pantallas táctiles así de anchas se dibuja 1,25 veces más grande (en horizontal,
-      // como si midiera 1024 px). Los ordenadores no usan esta etiqueta y quedan igual.
+      // En las tablets (Galaxy Tab S10+: unos 1400 px de ancho) todo se veía diminuto. En una
+      // pantalla táctil de tablet la app se agranda hasta ocupar el ancho como si midiera 1024 px
+      // en horizontal (768 en vertical). Va con «zoom» y no con la etiqueta viewport porque Chrome
+      // la ignora en modo «sitio de escritorio». Las alturas de pantalla usan --alto (index.css).
+      // Con ?pantalla en la dirección se ven las medidas, para ajustar desde la tablet; con
+      // ?tablet se agranda igual en el ordenador, para probarlo.
       ;(() => {
-        const meta = document.querySelector('meta[name="viewport"]')
+        const raiz = document.documentElement
         const tactil = matchMedia('(pointer: coarse)')
+        const forzar = location.search.includes('tablet')
         const ajustar = () => {
-          const grande = tactil.matches && Math.max(screen.width, screen.height) >= 1200
-          const escala = 1.25
-          meta.content = grande
-            ? `width=${Math.round(screen.width / escala)}, initial-scale=${escala}, viewport-fit=cover`
-            : 'width=device-width, initial-scale=1, viewport-fit=cover'
+          const w = innerWidth, h = innerHeight
+          const tablet = (tactil.matches || forzar) && Math.min(w, h) >= 600
+          const zoom = tablet ? Math.max(1, w / (w > h ? 1024 : 768)) : 1
+          raiz.style.zoom = zoom
+          raiz.style.setProperty('--zoom', zoom)
+          raiz.classList.toggle('tablet', zoom > 1)
+          const info = document.getElementById('medidas-pantalla')
+          if (info) info.textContent = `${w}×${h} px · ${devicePixelRatio}x · pantalla ${screen.width}×${screen.height} · táctil ${tactil.matches} · zoom ${zoom.toFixed(2)}`
         }
         ajustar()
-        matchMedia('(orientation: portrait)').addEventListener('change', ajustar)
+        addEventListener('resize', ajustar)
+        if (location.search.includes('pantalla')) {
+          addEventListener('DOMContentLoaded', () => {
+            const info = document.createElement('div')
+            info.id = 'medidas-pantalla'
+            info.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:99;padding:4px 10px;border-radius:0 0 8px 8px;background:#000c;color:#fff;font:12px monospace'
+            document.body.append(info)
+            ajustar()
+          })
+        }
       })()
     </script>
     <meta name="theme-color" content="#0b1d20" />
