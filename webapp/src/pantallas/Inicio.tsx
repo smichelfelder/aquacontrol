@@ -1,7 +1,8 @@
 import { useState, type ComponentProps, type ReactNode } from 'react'
 import { HistorialTemperatura } from '@/components/HistorialTemperatura'
+import { CambioAgua, DialogoMant, DialogoRegistro, EtiquetaMant, PanelActivo, PanelReanudando } from '@/components/Mantenimiento'
 import { Button } from '@/components/ui/button'
-import { IconoAcuario, IconoComida, IconoFlecha, IconoOlas, IconoPez, IconoPlanta } from '@/components/iconos'
+import { IconoAcuario, IconoComida, IconoFlecha, IconoLlave, IconoOlas, IconoPez, IconoPlanta } from '@/components/iconos'
 import {
   abonosDeHoy, fmt, fueraDeAvisos, litrosNetos, misPeces, misPlantas, nivelAgua, nivelPlanta, objetivo, problemasPez,
 } from '@/lib/acuario'
@@ -9,15 +10,22 @@ import { pulsar, tiene, useCentral } from '@/lib/central'
 import { comidaServida, horaToma, proximasTomas } from '@/lib/comida'
 import { useGuardado } from '@/lib/guardado'
 import { diaISO, fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
+import { notaSondas, ultimoCambio, type Mantenimiento } from '@/lib/mantenimiento'
 import { cn } from '@/lib/utils'
 import type { Seccion } from '@/App'
 
-export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
+export function Inicio({ ir, mt }: { ir: (s: Seccion) => void; mt: Mantenimiento }) {
   const central = useCentral()
   const [g, cambiar] = useGuardado()
   const ahora = useAhora()
   const s = central.sondas
   const [historial, setHistorial] = useState(false)
+  const [verMant, setVerMant] = useState(false)
+
+  // Mantenimiento: mientras dura cambia el abono por el cambio de agua y las acciones por la cuenta regresiva
+  const activo = mt.m?.modo === 'activo'
+  const reanudando = mt.m?.modo === 'reanudando'
+  const nota = notaSondas(mt)
 
   // Sondas y su objetivo según los peces que tengo
   const rT = objetivo(g, 't', s.temp)
@@ -62,19 +70,21 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
         <div className="font-heading text-xl">{fechaTxt(ahora)}</div>
         <div className="text-[13px] text-tenue">{central.conectado ? 'en vivo' : 'sin conexión'}</div>
       </div>
+      {mt.m && <div className="-mt-1 md:hidden"><EtiquetaMant mt={mt} /></div>}
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
-        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && (!rT.ok || fueraDeAvisos(s))} pie={objTxt(rT, 0, ' °C')}
+        <Sonda titulo="Temperatura" valor={fmt(s.temp, 1)} unidad="°C" alerta={s.temp != null && (!rT.ok || fueraDeAvisos(s))} pie={objTxt(rT, 0, ' °C')} nota={nota}
           onClick={() => setHistorial(true)} />
-        <Sonda titulo="pH" valor={fmt(s.ph, 1)} alerta={s.ph != null && !rP.ok} pie={objTxt(rP, 1, '')} />
-        <Sonda titulo="TDS" valor={s.tds == null ? '—' : String(Math.round(s.tds))} unidad="ppm" alerta={s.tds != null && !rD.ok} pie={objTxt(rD, 0, ' ppm')} />
-        <Sonda titulo="Nivel de agua" valor={nivel.txt} pie={nivel.sub} palabra
+        <Sonda titulo="pH" valor={fmt(s.ph, 1)} alerta={s.ph != null && !rP.ok} pie={objTxt(rP, 1, '')} nota={nota} />
+        <Sonda titulo="TDS" valor={s.tds == null ? '—' : String(Math.round(s.tds))} unidad="ppm" alerta={s.tds != null && !rD.ok} pie={objTxt(rD, 0, ' ppm')} nota={nota} />
+        <Sonda titulo="Nivel de agua" valor={nivel.txt} pie={nivel.sub} nota={nota} palabra
           tono={{ bien: 'text-primary', aviso: 'text-aviso', alerta: 'text-alerta', 'sin-dato': 'text-tenue' }[nivel.tono]} />
       </div>
       <HistorialTemperatura abierto={historial} cambiar={setHistorial} actual={s.temp} rango={rT.rango} modo={central.modo} />
 
       <div className="flex flex-col gap-3.5 md:grid md:flex-1 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] md:grid-rows-[1fr_auto] md:gap-4">
-        {/* Abono de hoy */}
+        {/* Abono de hoy (en mantenimiento, el cambio de agua) */}
+        {activo ? <CambioAgua mt={mt} temp={s.temp} /> : (
         <section aria-labelledby="abono-hoy"
           className="flex flex-col gap-3 rounded-[20px] border border-primary/40 bg-[rgb(12_40_31/0.78)] px-4 py-3.5 md:col-start-1 md:row-start-1 md:gap-3.5 md:rounded-[22px] md:px-6 md:py-[18px]">
           <div className="flex items-center justify-between">
@@ -101,9 +111,11 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
             </Button>
           )}
         </section>
+        )}
 
-        {/* Comida y filtro */}
+        {/* Comida, filtro y mantenimiento */}
         <div className="flex flex-col gap-3.5 md:col-start-2 md:row-span-2 md:row-start-1 md:gap-4">
+          {activo ? <PanelActivo mt={mt} /> : reanudando ? <PanelReanudando mt={mt} /> : <>
           <Accion icono={<IconoComida />} onClick={alimentar} disabled={!hayComedero}
             titulo={comidaOn ? 'Comida servida' : 'Alimentar ahora'}
             sub={!hayComedero ? 'Se activa en la etapa 5' : comidaOn ? `Filtro en pausa ${g.pausa} min`
@@ -116,7 +128,14 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
               <span className={cn('absolute top-1 size-6 rounded-full bg-[#f2f7f6] transition-[left]', filtroOn ? 'left-[30px]' : 'left-1')} />
             </span>
           </Accion>
+          <Accion icono={<IconoLlave />} onClick={() => setVerMant(true)} titulo="Mantenimiento" sub={ultimoCambio(g.mantHist, ahora)}
+            className="border-mant/36" caja="bg-mant/16 text-mant">
+            <IconoFlecha size={22} className="shrink-0 text-mant" />
+          </Accion>
+          </>}
         </div>
+        <DialogoMant mt={mt} abierto={verMant} cambiarAbierto={setVerMant} />
+        <DialogoRegistro mt={mt} />
 
         {/* Accesos */}
         <nav aria-label="Mi acuario" className="flex flex-col gap-2 md:col-start-1 md:row-start-2 md:grid md:grid-cols-3 md:gap-3.5">
@@ -138,8 +157,9 @@ export function Inicio({ ir }: { ir: (s: Seccion) => void }) {
 }
 
 /** Con onClick se puede tocar (abre el historial) y muestra una flecha. Con palabra, el valor es texto («Normal») y va más chico para entrar en la columna. */
-function Sonda({ titulo, valor, unidad, pie, alerta, tono, palabra, onClick }: {
-  titulo: string; valor: string; unidad?: string; pie: string; alerta?: boolean; tono?: string; palabra?: boolean; onClick?: () => void
+/** nota: en mantenimiento reemplaza al pie (las sondas siguen midiendo, sin alarmas). */
+function Sonda({ titulo, valor, unidad, pie, nota, alerta, tono, palabra, onClick }: {
+  titulo: string; valor: string; unidad?: string; pie: string; nota?: string | null; alerta?: boolean; tono?: string; palabra?: boolean; onClick?: () => void
 }) {
   const Caja = onClick ? 'button' : 'div'
   return (
@@ -157,20 +177,21 @@ function Sonda({ titulo, valor, unidad, pie, alerta, tono, palabra, onClick }: {
         </span>
         {unidad && <span className="text-base text-muted-foreground md:text-[22px]">{unidad}</span>}
       </div>
-      <div className="text-xs text-tenue md:text-sm">{pie}</div>
+      <div className={cn('text-xs md:text-sm', nota ? 'text-mant' : 'text-tenue')}>{nota ?? pie}</div>
     </Caja>
   )
 }
 
-function Accion({ icono, titulo, sub, children, className, ...props }: {
-  icono: ReactNode; titulo: string; sub: string; children?: ReactNode
+function Accion({ icono, titulo, sub, children, className, caja, ...props }: {
+  icono: ReactNode; titulo: string; sub: string; children?: ReactNode; caja?: string
 } & ComponentProps<'button'>) {
   return (
     <button type="button" {...props}
       className={cn('flex items-center gap-3.5 rounded-[20px] border border-border bg-panel px-4 py-3.5 text-left transition-colors',
         'enabled:cursor-pointer enabled:hover:bg-[rgb(14_34_36/0.8)] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
         'md:flex-1 md:gap-4 md:rounded-[22px] md:px-5 md:py-[18px]', className)}>
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-primary/14 text-secondary-foreground md:size-14 md:rounded-2xl [&_svg]:size-[26px] md:[&_svg]:size-[30px]">
+      <span className={cn('flex size-12 shrink-0 items-center justify-center rounded-[14px] md:size-14 md:rounded-2xl [&_svg]:size-[26px] md:[&_svg]:size-[30px]',
+        caja ?? 'bg-primary/14 text-secondary-foreground')}>
         {icono}
       </span>
       <span className="flex grow flex-col gap-0.5 md:gap-1">

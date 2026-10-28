@@ -11,6 +11,17 @@ export interface MiPez { id: string; cant: number; m?: number; h?: number; s?: n
 /** Una toma del alimentador: hora, días (lunes a domingo, 1 = come) y vueltas del tambor. */
 export interface Toma { id: string; h: number; m: number; dias: number[]; vueltas: number; activa: boolean }
 
+/** Un mantenimiento del historial: el día (ms, a medianoche), las tareas y cuánta agua se cambió. */
+export interface RegMant { id: string; fecha: number; tareas: string[]; pct: number }
+
+/**
+ * El mantenimiento en curso. activo: todo apagado hasta fin (ms). reanudando: el filtro ya volvió;
+ * el calentador y las alarmas de las sondas vuelven a esas horas (ms). registro: falta preguntar qué se hizo.
+ */
+export type Mant =
+  | { modo: 'activo'; fin: number }
+  | { modo: 'reanudando'; calentador: number; sondas: number; co2: boolean; registro: boolean }
+
 export interface Guardado {
   peces: MiPez[]
   mias: string[]                                   // ids de plantas
@@ -24,6 +35,10 @@ export interface Guardado {
   comida: number   // cuándo se dio de comer (ms)
   tomas: Toma[]    // horario del alimentador
   pausa: number    // minutos de filtro apagado en cada toma
+  mant: Mant | null
+  mantDur: number  // minutos elegidos la última vez
+  mantPct: number  // % de agua a cambiar
+  mantHist: RegMant[]
   sel?: string
   selP?: string
 }
@@ -45,6 +60,13 @@ const INICIAL: Guardado = {
     { id: 't3', h: 13, m: 30, dias: [0, 0, 0, 0, 0, 1, 0], vueltas: 1, activa: false },
   ],
   pausa: 10,
+  mant: null, mantDur: 60, mantPct: 30,
+  mantHist: [
+    { id: 'm1', fecha: new Date(2026, 9, 11).getTime(), tareas: ['Cambio de agua', 'Poda'], pct: 30 },
+    { id: 'm2', fecha: new Date(2026, 9, 4).getTime(), tareas: ['Cambio de agua', 'Limpieza de filtro'], pct: 30 },
+    { id: 'm3', fecha: new Date(2026, 8, 27).getTime(), tareas: ['Cambio de agua', 'Vidrios'], pct: 20 },
+    { id: 'm4', fecha: new Date(2026, 8, 20).getTime(), tareas: ['Cambio de agua', 'Poda', 'Sustrato'], pct: 30 },
+  ],
 }
 
 function leer(): Guardado {
@@ -56,6 +78,8 @@ function leer(): Guardado {
     if (!Array.isArray(g.abonos)) delete g.abonos  // la app anterior no tenía la lista
     if (!Array.isArray(g.tomas)) delete g.tomas
     if (typeof g.pausa !== 'number') delete g.pausa
+    if (!Array.isArray(g.mantHist)) delete g.mantHist
+    if (g.mant !== null && typeof g.mant?.modo !== 'string') delete g.mant
     return { ...INICIAL, ...g }
   } catch {
     return INICIAL
