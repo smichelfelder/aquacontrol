@@ -25,6 +25,12 @@ export const IconoVolver = (p: P) => <Trazo strokeWidth={2} {...p}><path d="M19 
 export const IconoMas = (p: P) => <Trazo strokeWidth={2.2} {...p}><path d="M12 5v14M5 12h14" /></Trazo>
 export const IconoBuscar = (p: P) => <Trazo strokeWidth={2} {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></Trazo>
 export const IconoFlecha = (p: P) => <Trazo strokeWidth={2} {...p}><path d="M9 6l6 6-6 6" /></Trazo>
+export const IconoFlechaIzq = (p: P) => <Trazo strokeWidth={2} {...p}><path d="M15 6l-6 6 6 6" /></Trazo>
+export const IconoLlave = (p: P) => <Trazo {...p}><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" /></Trazo>
+export const IconoCambioAgua = (p: P) => <Trazo {...p}><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" /><path d="M9 15a3 3 0 0 0 3 3" /></Trazo>
+export const IconoReanudar = (p: P) => <Trazo {...p}><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4" /></Trazo>
+export const IconoEditar = (p: P) => <Trazo {...p}><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></Trazo>
+export const IconoBorrar = (p: P) => <Trazo {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></Trazo>
 
 /** La gota de AquaControl (página «Logo AquaControl» del diseño). */
 export function Logo({ size = 28, color = '#7fd6b4' }: { size?: number; color?: string }) {

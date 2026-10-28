@@ -25,6 +25,7 @@
   --color-alerta: #f29a9a;     /* problema serio (rojo) */
   --color-bien: #b9dc8c;       /* resumen en orden */
   --color-planta: #97c459;
+  --color-mant: #f2c46d;       /* modo mantenimiento */
   --color-tenue: #93aea8;      /* textos secundarios más apagados */
   --color-panel: rgb(9 24 26 / 0.7);
   --color-barra: #0f2427;

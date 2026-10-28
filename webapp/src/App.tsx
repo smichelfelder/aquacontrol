@@ -3,7 +3,9 @@ import { IconoAcuario, IconoAlimentador, IconoCalendario, IconoInicio, IconoPez,
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cerrarSesion, useCentral } from '@/lib/central'
+import { EtiquetaMant } from '@/components/Mantenimiento'
 import { hayCuenta } from '@/lib/cuenta'
+import { useMantenimiento } from '@/lib/mantenimiento'
 import { fechaTxt, horaTxt, useAhora } from '@/lib/use-ahora'
 import { cn } from '@/lib/utils'
 import { Abonos } from '@/pantallas/Abonos'
@@ -33,6 +35,8 @@ export default function App() {
   const [seccion, setSeccion] = useState<Seccion>('inicio')
   const [saliendo, setSaliendo] = useState(false)
   const [barra, setBarra] = useState<Barra | null>(null)
+  // Acá y no en Inicio: el tiempo del mantenimiento corre aunque se esté en otra sección
+  const mt = useMantenimiento()
   if (central.pide) return <Ingreso pide={central.pide} />
   if (central.cargando) {
     return (
@@ -50,10 +54,11 @@ export default function App() {
     <div className="flex min-h-(--alto) flex-col md:flex-row">
       <Secciones actual={seccion} ir={setSeccion} salir={salir} />
       <div className="flex min-w-0 grow flex-col pb-20 md:pb-0">
-        <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} junto={barra?.junto} accion={barra?.accion}
+        <Encabezado titulo={barra?.titulo ?? actual.titulo} atras={barra?.atras} accion={barra?.accion}
+          junto={seccion === 'inicio' ? <EtiquetaMant mt={mt} /> : barra?.junto}
           inicio={seccion === 'inicio'} conectado={central.conectado} salir={salir} />
         <main className="grow px-4 pt-1 pb-6 md:px-7 md:pb-6">
-          {seccion === 'inicio' ? <Inicio ir={setSeccion} />
+          {seccion === 'inicio' ? <Inicio ir={setSeccion} mt={mt} />
             : seccion === 'abonos' ? <Abonos />
               : seccion === 'comida' ? <Alimentador barra={setBarra} />
               : seccion === 'acuario' ? <MiAcuario ir={setSeccion} />
