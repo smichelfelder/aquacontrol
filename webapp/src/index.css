@@ -6,7 +6,7 @@
 
 /* La app es siempre oscura: los colores salen del diseño (diseno/Pantallas AquaControl.html). */
 
-/* Con el zoom de la tablet (index.html) la app mide 1024 px aunque la pantalla mida más:
+/* Con el zoom de la tablet (index.html) la app mide 1200 px aunque la pantalla mida más:
    «xl:» (desde 1280 px) no se aplica ahí, aunque la media query sí se cumpla. */
 @custom-variant xl {
   @media (width >= 80rem) {

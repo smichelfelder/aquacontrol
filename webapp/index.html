@@ -5,19 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script>
       // En las tablets (Galaxy Tab S10+: unos 1400 px de ancho) todo se veía diminuto. En una
-      // pantalla táctil de tablet la app se agranda hasta ocupar el ancho como si midiera 1024 px
-      // en horizontal (768 en vertical). Va con «zoom» y no con la etiqueta viewport porque Chrome
+      // pantalla táctil de tablet la app se agranda hasta ocupar el ancho como si midiera 1200 px
+      // en horizontal (900 en vertical); con 1024 quedaba demasiado grande. Para agrandar o achicar,
+      // se cambian esos dos números. Va con «zoom» y no con la etiqueta viewport porque Chrome
       // la ignora en modo «sitio de escritorio». Las alturas de pantalla usan --alto (index.css).
       // Con ?pantalla en la dirección se ven las medidas, para ajustar desde la tablet; con
       // ?tablet se agranda igual en el ordenador, para probarlo.
       ;(() => {
+        const HORIZONTAL = 1200, VERTICAL = 900
         const raiz = document.documentElement
         const tactil = matchMedia('(pointer: coarse)')
         const forzar = location.search.includes('tablet')
         const ajustar = () => {
           const w = innerWidth, h = innerHeight
           const tablet = (tactil.matches || forzar) && Math.min(w, h) >= 600
-          const zoom = tablet ? Math.max(1, w / (w > h ? 1024 : 768)) : 1
+          const zoom = tablet ? Math.max(1, w / (w > h ? HORIZONTAL : VERTICAL)) : 1
           raiz.style.zoom = zoom
           raiz.style.setProperty('--zoom', zoom)
           raiz.classList.toggle('tablet', zoom > 1)
